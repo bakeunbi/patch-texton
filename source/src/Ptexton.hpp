@@ -116,10 +116,7 @@ private:
 	//! calculate histogram
 	//! input: vector<Mat> histogram DB of a fold (Mat is histograms in a class)
 	vector<Mat> trainHist(Mat textonMap, int fold);
-
-	//! classification by mapping histogram
-	void classification(Mat textonMap);
-
+	
 	//! the image data during training and evaluation
 	ImgData imageData;
 	

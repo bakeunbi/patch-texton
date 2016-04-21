@@ -14,7 +14,7 @@ using namespace std;
 int main(int argc, char** argv){
    
 	int pSize, K;
-	string RP = "yes";
+	string RP = "no";
 	//patchTextons.exe data.rat K pSize RP_Type	//image_type
 
 	if (argc < 2){
@@ -22,8 +22,8 @@ int main(int argc, char** argv){
 		return 1;
 	}
 	else if (argc < 3){
-		K = 3;
-		pSize = 3;
+		K = 10;
+		pSize = 5;
 	}
 	else if (argc < 4){
 		K = atoi(argv[2]);

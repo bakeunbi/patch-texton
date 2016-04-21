@@ -129,89 +129,6 @@ void PTexton::generateRandomMat(Mat& randomMat, int highD, int lowD, string rMod
 	//cout << "generate Random Matrix - success" << endl;
 
 }
-//void PTexton::calculateFVecRP(Mat tImg, Mat& featureVec){
-//	//ignore boundary pixel of image which can not make complete patch(size: pSize x pSize)
-//	int r = tImg.rows - this->pSize;
-//	int c = tImg.cols - this->pSize;
-//	int nVector = r*c;
-//
-//	// vSize: size before RP (highD)
-//	int highD = this->pSize*this->pSize;
-//
-//	// define lowD for dimension reduction
-//	int lowD = highD / 4;
-//	Mat randomMat;
-//	generateRandomMat(randomMat, highD, lowD, "gaussian");//Rmode = "gaussian" or "achlioptas"
-//
-//	//this->vSize = highD*tImg.channels();
-//	this->vSize = lowD*tImg.channels();	//for RP
-//
-//	//input matrix for k-means
-//	featureVec.create(nVector, 1, CV_32FC(vSize));	////mat type must same to vector type
-//
-//	float* p;
-//	for (int i = half_patch, n = 0; i < r + half_patch; i++){
-//		for (int j = half_patch; j < c + half_patch; j++, n++){
-//
-//			Mat highMat(highD, 1, tImg.type());
-//
-//			//trace each pixel in a patch
-//			for (int k = -half_patch, n2 = 0; k <= half_patch; k++){
-//				for (int l = -half_patch; l <= half_patch; l++, n2++){
-//					if (i + k < tImg.rows && j + l < tImg.cols&&i + k >= 0 && j + l >= 0){
-//						switch (this->imgType){
-//						case GRAY:
-//							highMat.at<float>(n2) = tImg.at<float>(i + k, j + l);	break;
-//						case COLOR:
-//							highMat.at<Vec3f>(n2)[0] = tImg.at<Vec3f>(i + k, j + l)[0];
-//							highMat.at<Vec3f>(n2)[1] = tImg.at<Vec3f>(i + k, j + l)[1];
-//							highMat.at<Vec3f>(n2)[2] = tImg.at<Vec3f>(i + k, j + l)[2];	break;
-//						case POLSAR:
-//							break;
-//						}
-//					}
-//					else{
-//						cerr << "ERROR: boundary check(" << i + k << "," << j + l << ")" << endl;
-//						break;
-//					}					
-//				}
-//			}
-//			//for multiple channel,  split, mutply and then merge
-//			Mat lowMat;// = randomMat*highMat;
-//			switch (highMat.channels()){
-//			case 1:
-//				lowMat = randomMat*highMat;
-//				break;
-//			case 3:
-//				vector<Mat> eachHighCh;
-//				split(highMat, eachHighCh);
-//				for (int c = 0; c < 3; c++){
-//					eachHighCh[c] = randomMat*eachHighCh[c];
-//				}
-//				merge(eachHighCh, lowMat);
-//			}
-//
-//			//vector normailzation is needed to increase the robustness
-//			normalize(lowMat, lowMat, 0, 255, CV_MINMAX);
-//			
-//			p = featureVec.ptr<float>(n);
-//			for (int a = 0,n2=0; a < lowD; a++,n2++){
-//				switch (this->imgType){
-//				case GRAY:
-//					p[n2] = lowMat.at<float>(a);	break;
-//				case COLOR:
-//					p[n2] = lowMat.at<Vec3f>(a)[0];	n2++;
-//					p[n2] = lowMat.at<Vec3f>(a)[1];	n2++;
-//					p[n2] = lowMat.at<Vec3f>(a)[2];	break;
-//				case POLSAR:
-//
-//					break;
-//				}
-//			}
-//
-//		}
-//	}
-//}
 
 void PTexton::generateFVectors(cv::Rect region, int num){
 
@@ -372,90 +289,71 @@ Mat PTexton::textonMapping(vector<vector<Mat>> tfvectors, vector<vector<Mat>> tc
 void PTexton::train(){
 
 	cout << "train" << endl;
-		
-	//variable for K-means
-	//Mat featureVec = extractFVec("train", this->RP); // (train, RP)
+	//// Image selection ////
+	//selectCurrentImage();
+	foldGeneration();
+	loadReferenceData();
 
-	//match texton for each pixel using feature vector of each patch
-	Mat textonMap;
-	//textonMapping(featureVec, textonMap, "train");
-	
-	//this->nPatches = trainHist(textonMap);
-	
-	cout << "train-success" << endl;
-}
-void PTexton::classification(Mat textonMap){
+	//// feature extraction ////
+	for (int j = 0; j < 5; j++){// this->nfolds; j++){
+		//feature extraction				
+		this->generateFVectors(this->foldRect.at(j), j);
 
-	Mat trainData;// = this->histDB.clone();
-	////showImg(trainData, "textons", true, false);
+		//Random Projection
+		//this->RandomProjection(j);
 
-	Mat trainClasses(trainData.rows, 1, CV_32F);
-	int n = 0;
-	for (int j = 0, i = 0; j < referenceData.size(); j++){
-		//cout << n << endl;
-		n += this->nPatches[j];
+		//cluster textons
+		this->clusterTextons(j);
+	}
 
-		for (; i<n; i++){
-			trainClasses.at<float>(i) = j;
+	//// training and testing in each fold ////
+	for (int i = 0; i < this->nfolds; i++){
+		// training //// 	
+
+		//texton dictionary construction
+		vector<vector<Mat>> textonDic;
+		for (int j = 0; j < this->nfolds; j++){
+			if (j != i) //test data isn't included in training data
+				textonDic.insert(textonDic.end(), textons[j].begin(), textons[j].end());
+		}
+
+		//printCenter(centers);
+		cout << "K=" << textonDic.size() << endl;
+
+		//texton mapping
+		Mat textonMap[5];
+		for (int j = 0; j < this->nfolds; j++){
+			textonMap[j] = textonMapping(fVectors[j], textonDic);	//fVectors, textons Dictionary
+			imwrite(to_string(j) + "textonMap.png", textonMap[j]);
+			showImg(textonMap[j].clone(), (string("textonMap") + to_string(j)).c_str(), false, true);
 		}
 	}
-	//cout << n << endl;
 
-	//// learn classifier
-	cv::KNearest *knn;
-	knn = new KNearest(trainData, trainClasses);
-	//Mat nearests(1, K, CV_32FC(vSize));
-
-	Mat outputImg;	//output matrix 
-	//int r = testRect.height;
-	//int c = testRect.width;
-
-	//outputImg.create(r - 2*pSize, c - 2*pSize, CV_8U);
-
-	//for (int i = this->pSize; i < r - pSize; i++){
-	//	for (int j = this->pSize; j < c - pSize; j++){
-
-	//		//calculate histogram in test image
-	//		Mat sample = Mat::zeros(1, this->K, CV_32F);
-	//		for (int k = -half_patch; k <= half_patch; k++){
-	//			for (int l = -half_patch; l <= half_patch; l++){
-	//				int textonVal = textonMap.at<uchar>(i + k-half_patch, j + l-half_patch);
-	//				//cout << textonVal << " ";
-	//				//cout << "(x,y)=(" << i + k - half_patch << "," << j + l - half_patch << "):";
-	//				sample.at<float>(0, textonVal) += 1;
-	//			}
-	//		}
-
-	//		// estimate the response and get the neighbors' labels
-	//		int response = knn->find_nearest(sample, 1);
-	//		outputImg.at<uchar>(i - pSize, j - pSize) = (uchar)response;
-	//	}
-	//}
-
-	showImg(outputImg, "classification result", true, true);
-	this->resultImg = outputImg;
-
+	cout << "train-success" << endl;
 }
 
 //! testing patch-based textons
 Mat PTexton::test(Mat textonMap, vector<Mat> histDB, int fold){
 	cout << "test start" << endl;
 	
-	//Random Projection
-	//Mat oneDB;
-	//vconcat(histDB, oneDB);
-
-	//vector<Mat> reduced;	//reduced
-	//for (int i = 0; i < oneDB.rows; i++){
-	//	Mat r = oneDB.row(i);
-	//	transpose(r, r);
-	//	reduced.push_back(RandomProjection(r));
-	//}
-
-	//K-nn training
 	Mat trainData;
-	//vconcat(reduced, trainData);
-	vconcat(histDB, trainData);
+	//Random Projection
+	if (this->RP == "yes"){
+		Mat oneDB;
+		vconcat(histDB, oneDB);
+
+		vector<Mat> reduced;	//reduced
+		for (int i = 0; i < oneDB.rows; i++){
+			Mat r = oneDB.row(i);
+			transpose(r, r);
+			reduced.push_back(RandomProjection(r));
+		}
+		vconcat(reduced, trainData);
+	}
+	else{
+		vconcat(histDB, trainData);
+	}
+	//K-nn training
 	trainData.convertTo(trainData, CV_32F);
 	Mat trainClass(trainData.rows,1,CV_32SC1);
 
@@ -467,6 +365,7 @@ Mat PTexton::test(Mat textonMap, vector<Mat> histDB, int fold){
 		}
 	}
 	cout << "train success" << endl;
+
 	cv::KNearest *knn = new KNearest(trainData, trainClass);
 	Mat output = Mat::zeros(textonMap.rows - pSize, textonMap.cols - pSize,CV_32S);
 
@@ -492,9 +391,16 @@ Mat PTexton::test(Mat textonMap, vector<Mat> histDB, int fold){
 			calcHist(&patch, 1, 0, Mat(), hist, 1, &histSize, &histRange, uniform, accumulate);
 			//cout << "hist size=" << hist.size() << endl;
 			//cout << hist << endl;
-			//hist = RandomProjection(hist);
-			transpose(hist, hist);
+
+			if (this->RP == "yes"){
+				hist = RandomProjection(hist);
+			}
+			else{
+				transpose(hist, hist);
+				hist.convertTo(hist, CV_32F);
+			}
 			//cout << hist << endl;
+
 			//find nearest neighbor
 			//TODO:revise Knn
 			int knn_k=3;
@@ -519,13 +425,15 @@ vector<Mat> PTexton::trainHist(Mat textonMap,int fold){
 	vector<Mat> refFolds;
 	for (int c = 0; c < nclass; c++){
 		Mat refFold = referenceData.at(c)(foldRect.at(fold));
+		//imshow("refFold", refFold);
+		//waitKey(0);
 		refFolds.push_back(refFold.clone());
 	}
 
 	vector<Mat> histDB[5];
-	
-	for (int i = half_patch; i < textonMap.rows-half_patch; i++){
-		for (int j = half_patch; j < textonMap.cols-half_patch; j++){
+
+	for (int i = half_patch; i < foldRect[fold].height - half_patch; i++){
+		for (int j = half_patch; j < foldRect[fold].width - half_patch; j++){
 			//define the class in a pixel (center of patch) by searching reference data
 			int curClass = -1;
 
@@ -547,7 +455,7 @@ vector<Mat> PTexton::trainHist(Mat textonMap,int fold){
 
 			Mat patch = textonMap(patchR);
 			patch.convertTo(patch, CV_32F);
-
+			//cout << patch << endl;
 			//calculation of histogram in each patch
 			int histSize = 4 * this->K;
 			float range[] = { 0, histSize };
@@ -566,6 +474,7 @@ vector<Mat> PTexton::trainHist(Mat textonMap,int fold){
 			histDB[curClass].push_back(hist.clone());
 			
 		}
+		//cout << i << endl;
 	}
 	vector<Mat> newDB;
 	//transform type of histDB
@@ -614,7 +523,7 @@ bool PTexton::loadReferenceData(){
 
 		resize(img, img, this->imageData.getSize());
 		//normalize(img, img, 0, 255, CV_MINMAX);
-		//cout << "resized ref size:" << img.size() << endl;
+		cout << "resized ref size:" << img.size() << endl;
 		this->referenceData.push_back(img);
 
 		if (!img.data){
@@ -668,7 +577,7 @@ void PTexton::foldGeneration(){
 	
 	//use vertical folds
 	for (int i = 0; i < this->nfolds; i++){
-		int x = half_patch + (width / nfolds)*i;
+		int x = half_patch + ((width-pSize) / nfolds)*i;
 		int y = half_patch+1000;
 
 		//int w = (width - pSize) / nfolds;
@@ -696,7 +605,7 @@ void PTexton::evaluate(){
 	foldGeneration();
 	loadReferenceData();
 
-	//// feature extraction ////
+	////// feature extraction ////
 	//for (int j = 0; j < 5;j++){// this->nfolds; j++){
 	//	//feature extraction				
 	//	this->generateFVectors(this->foldRect.at(j),j);
@@ -708,40 +617,43 @@ void PTexton::evaluate(){
 	//	this->clusterTextons(j);
 	//}
 
+	
 	vector<Mat> output;
 	//// training and testing in each fold ////
+//	for (int i = 0; i < this->nfolds; i++){
+		// training //// 	
+		//
+		////texton dictionary construction
+		//vector<vector<Mat>> textonDic;
+		//for (int j = 0; j < this->nfolds; j++){
+		//	if (j!=i) //test data isn't included in training data
+		//		textonDic.insert(textonDic.end(), textons[j].begin(), textons[j].end());
+		//}
+
+		////printCenter(centers);
+		//cout << "K=" << textonDic.size() << endl;
+
+		////texton mapping
+		//Mat textonMap[5];
+		//for (int j = 0; j < this->nfolds; j++){
+		//	textonMap[j] = textonMapping(fVectors[j], textonDic);	//fVectors, textons Dictionary
+		//	imwrite(to_string(j) + "textonMap.png", textonMap[j]);
+		//	showImg(textonMap[j].clone(), (string("textonMap") + to_string(j)).c_str(), false, true);
+		//}
+
+	Mat textonMap[5];
+	for (int i = 0; i < 5; i++){
+		textonMap[i] = imread(to_string(i) + "textonMap.png", 0);
+		//showImg(textonMap[i],"showtexton",true,false);
+		//waitKey(0);
+	}
+
 	for (int i = 0; i < this->nfolds; i++){
-	//	// training //// 	
-	//	
-	//	//texton dictionary construction
-	//	vector<vector<Mat>> textonDic;
-	//	for (int j = 0; j < this->nfolds; j++){
-	//		if (j!=i) //test data isn't included in training data
-	//			textonDic.insert(textonDic.end(), textons[j].begin(), textons[j].end());
-	//	}
-
-	//	//printCenter(centers);
-	//	cout << "K=" << textonDic.size() << endl;
-
-	//	//texton mapping
-	//	Mat textonMap[5];
-	//	for (int j = 0; j < this->nfolds; j++){
-	//		textonMap[j] = textonMapping(fVectors[j], textonDic);	//fVectors, textons Dictionary
-	//		imwrite(to_string(j) + "textonMap.png", textonMap[j]);
-	//		showImg(textonMap[j].clone(), (string("textonMap") + to_string(j)).c_str(), false, true);
-	//	}
-
-		Mat textonMap[5];
-		for (int i = 0; i < 5; i++){
-			textonMap[i] = imread(to_string(i) + "textonMap.png", 0);
-			//showImg(textonMap[i],"showtexton",true,false);
-			//waitKey(0);
-		}
 
 		//histogram calculation
 		//generate Database of histogram (size = # of classes)
 		vector<Mat> histDB;
-		for (int j = 0; j < 5; j++){
+		for (int j = 0; j < this->nfolds; j++){
 			if (j != i){ //test data isn't included in training data
 				vector<Mat> tempHistDB = trainHist(textonMap[j].clone(),j);
 				
@@ -879,7 +791,6 @@ void PTexton::clusterTextons(int num){
 
 	int foldnum = 0;
 
-
 	vector<vector<Mat>> centers;
 	vector<vector<Mat>> oldCenters;
 	
@@ -899,7 +810,7 @@ void PTexton::clusterTextons(int num){
 	}
 		
 
-	const int maxIter = 3;
+	const int maxIter = 10;
 	int iter = 0;
 	// loop if stop criteria isn't satisfied
 	while (iter < maxIter){
@@ -1009,6 +920,18 @@ void PTexton::clusterTextons(int num){
 		}
 		cout << "make centers - complete" << endl;
 		
+		////improve initial center setting////
+		/*double min, max;
+		Point mini, maxi;
+		minMaxLoc(nlabel, &min, &max, &mini, &maxi);
+*/
+		for (int i = 0; i < K; i++){
+			if (nlabel.at <int>(i) == 1){
+				int random = rand() % fsize;
+				newcenters.at(i) = fVectors[num].at(random);
+			}
+		}
+
 		//stop criteria		
 		//oldCenters != centers
 		
@@ -1029,7 +952,10 @@ void PTexton::clusterTextons(int num){
 			}
 			if (same == false){	break;}
 		}
-		if (same == true){ break; }
+		if (same == true){ 
+			cout << "iteration stop i = " << iter << endl;
+			break;
+		}
 
 		centers = newcenters;
 		newcenters.clear();
