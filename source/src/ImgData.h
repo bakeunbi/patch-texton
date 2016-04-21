@@ -62,7 +62,9 @@ class ImgData{
     /*!
       returns NULL if there is no data at this level for this representation
     */
-    Mat getData(int level, int rep, int channel=0);
+    Mat getData(int level, int rep);
+	vector<Mat> getPolSARData();
+
 
   private:
     //! projection of PolSAR-data down to all other data levels; called by project(void)
@@ -87,7 +89,8 @@ class ImgData{
     
     //! the data of level 4: PolSAR-data
     /*!
-      each element of the vector corresponds to a channel of the PolSAR data in this order: [0] = _hh, [1] = _vv (, [2] = _hv <-- in the case of fully-polarimetric data)
+      each element of the vector corresponds to a channel of the PolSAR data in this order: [0] = _hh, [1] = _vv 
+	  (, [2] = _hv <-- in the case of fully-polarimetric data)
     */
     vector< vector<Mat> > polSAR;
     
@@ -102,6 +105,7 @@ class ImgData{
     /*!
     */
     vector<Mat> grayscale;
+
 };
 
 #endif

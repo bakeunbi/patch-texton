@@ -118,7 +118,7 @@ void ImgData::polSARProjection(void){
 	  green = channels.at(0).clone();
 	  split(cov.at(8), channels);
 	  blue = channels.at(0).clone();
-	  cout << "the data isn't dual pol" << endl;
+	  //cout << "the data isn't dual pol" << endl;
     }else{
       // in the case of dual pol, use average of the first two channels as the third channel
       split(cov.at(0), channels);
@@ -131,7 +131,7 @@ void ImgData::polSARProjection(void){
     // perform log-transform
 	cout << this->path << endl;
 	if (this->path.find("oph") != string::npos){
-		cout << "use log" << endl;
+		//cout << "use log" << endl;
 		red = red + 1;
 		green = green + 1;
 		blue = blue + 1;
@@ -172,9 +172,11 @@ void ImgData::polSARProjection(void){
     
     // add
     this->color.push_back(colImg.clone());
+	
+	Mat gray_image;
+	cvtColor(colImg, gray_image, CV_BGR2GRAY);
+	this->grayscale.push_back(gray_image.clone());
 
-
- 
 }
 
 // return image size
@@ -210,14 +212,35 @@ int ImgData::getNumberOfRepresentations(int level){
 }
     
 // return data of specified representation at specified level
-Mat ImgData::getData(int level, int rep, int channel){
+Mat ImgData::getData(int level, int rep){
 
   Mat out;
   // check if there is such a representation at specified level
   switch(level){
-    case 4: if (rep < polSAR.size()) if (channel < polSAR.at(rep).size()) out = polSAR.at(rep).at(channel);break;
+    case 4: 
+		if (rep < polSAR.size()) {
+			out = polSAR.at(rep).at(0);  break;
+		}
     case 2: if (rep < color.size()) out = color.at(rep);break;
     case 1: if (rep < grayscale.size()) out = grayscale.at(rep);break;
   }
+  if (out.rows == 0){
+	  cerr << "Error: getData() error - there is no data" << endl;
+  }
   return out;  
+}
+
+/*
+* author: Eunbi Park
+* date	: 12.04.2016
+* input	: void
+* output: vector<Mat> PolSAR
+* contents
+*		implement function for getting PolSAR data
+*/
+vector<Mat> ImgData::getPolSARData(){
+	if (polSAR.at(0).at(0).rows == 0){
+		cerr << "Error: getPolSARData() error - there is no data" << endl;
+	}
+	return polSAR.at(0);
 }

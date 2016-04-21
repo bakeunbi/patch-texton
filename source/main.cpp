@@ -13,16 +13,17 @@ using namespace std;
 
 int main(int argc, char** argv){
    
-	int pSize =5, K=10;
+	int pSize, K;
 	string RP = "yes";
+	//patchTextons.exe data.rat K pSize RP_Type	//image_type
 
 	if (argc < 2){
 		cout << "Usage Error: Select image!" << endl;
 		return 1;
 	}
 	else if (argc < 3){
-		K = 10;
-		pSize = 5;
+		K = 3;
+		pSize = 3;
 	}
 	else if (argc < 4){
 		K = atoi(argv[2]);
@@ -37,9 +38,9 @@ int main(int argc, char** argv){
 	string fname = argv[1];
 	PTexton pTexton(fname,pSize,K,RP);	//file name, patch size, K,RP
 	
-	pTexton.learningTexton();
-	pTexton.train();
-	pTexton.test();
+	//pTexton.learningTexton();
+	//pTexton.train();
+	//pTexton.test();
 	pTexton.evaluate();
 
 	return 0;

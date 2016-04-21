@@ -4,12 +4,15 @@ project (patchTextons)
 # add the binary tree to the search path for include files
 # add_subdirectory(src)
 include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/eval")
 include_directories("/opencv/build/include/opencv")
 include_directories("/opencv/build/include/opencv2")
 include_directories("/opencv/build/include")
 # include_directories("${PROJECT_BINARY_DIR}/src/lib/")
-include_directories("/boost_1_59_0/")
-link_directories("/boost_1_59_0/lib/")
+include_directories("/boost_1_58_0/")
+link_directories("/boost_1_58_0/lib/")
+link_directories("/opencv/build/x64/vc12/lib")
+# link_directories("/opencv/build/x64/vc12/bin")
 
 # set (CMAKE_CXX_FLAGS "-g")
 
@@ -19,7 +22,8 @@ main.cpp
 src/ImgData.cpp
 src/PTexton.cpp
 src/patchVector.cpp
-src/ClassificationError.cpp
+eval/ClassificationError.cpp
+#eval/Evaluation.cpp
 )
 
 target_link_libraries(patchTextons opencv_core2410)
