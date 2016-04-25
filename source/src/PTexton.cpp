@@ -80,19 +80,21 @@ PTexton::PTexton(string fname, int patchSize, int K, string rp){
 	this->nfolds = 5;
 	this->imgType = POLSAR;
 //	this->vSize = 0;
+	ofile.open(to_string(K) + "K" + to_string(pSize) + "p" + "Experimental data.txt");
 
 	if (this->loadImageData()){
 		cout << "loadImageData successfully" << endl;
+		ofile << "loadImageData successfully" << endl;
 	}
 	else{
-		cout << "loadImageData error" << endl;
+		cout << "loadImageData error" << endl; ofile << "loadImageData error" << endl;
 	}
 
 }
 
 //! the destructor
 PTexton::~PTexton(void){
-
+	ofile.close();
 }
 void PTexton::generateRandomMat(Mat& randomMat, int highD, int lowD, string rMode){
 	//Random Projection//
@@ -132,7 +134,7 @@ void PTexton::generateRandomMat(Mat& randomMat, int highD, int lowD, string rMod
 
 void PTexton::generateFVectors(cv::Rect region, int num){
 
-	cout << "generateFVectors()" << endl;
+	ofile << "generateFVectors()" << endl;
 
 	int nVector = region.height * region.width;
 	//cout << "expected fVectors size:" << nVector << endl;
@@ -180,9 +182,12 @@ void PTexton::generateFVectors(cv::Rect region, int num){
 					fVec.push_back(aPixel.clone());
 				}
 			}
-		this->fVectors[num].push_back(fVec);
+		this->fVectors.push_back(fVec);
+		vector<Mat>().swap(fVec);
 		}
 	}
+	vector<Mat>().swap(curPolSAR);
+	curPolSAR.clear();
 
 	//size of feature vectors
 	//cout << "current fVectors size:" << fVectors[num].size() << endl;
@@ -192,7 +197,6 @@ void PTexton::generateFVectors(cv::Rect region, int num){
 void PTexton::learningTexton(void){
 
 	cout << "learningTexton start" << endl;
-
 	this->selectCurrentImage();
 
 	//variable for K-means
@@ -200,17 +204,18 @@ void PTexton::learningTexton(void){
 
 	//clusterTextons(featureVec);
 	
-	cout << "learningTexton end" << endl;
+	cout << "learningTexton end" << endl; 
 }
 
 Mat PTexton::textonMapping(vector<vector<Mat>> tfvectors, vector<vector<Mat>> tcenters){
 	cout << "textonMapping" << endl;
-	
+	ofile << "textonMapping" << endl;
+
 	int vsSize = tfvectors.size();
 	int vSize = tfvectors.at(0).size();
 	int cSize = tcenters.size();
 
-	cout << "center size=" << cSize << endl;
+	cout << "center size=" << cSize << endl; ofile << "center size=" << cSize << endl;
 	Mat label(vsSize, 1, CV_32S);
 
 
@@ -288,7 +293,8 @@ Mat PTexton::textonMapping(vector<vector<Mat>> tfvectors, vector<vector<Mat>> tc
 //! training patch-based textons
 void PTexton::train(){
 
-	cout << "train" << endl;
+	cout << "train stage" << endl;
+	ofile << "train stage" << endl;
 	//// Image selection ////
 	//selectCurrentImage();
 	foldGeneration();
@@ -303,7 +309,11 @@ void PTexton::train(){
 		//this->RandomProjection(j);
 
 		//cluster textons
-		this->clusterTextons(j);
+		int sampling = 100;
+		this->clusterTextons(j,sampling);
+
+		//vector free
+		vector<vector<Mat>>().swap(fVectors);
 	}
 
 	//// training and testing in each fold ////
@@ -319,21 +329,33 @@ void PTexton::train(){
 
 		//printCenter(centers);
 		cout << "K=" << textonDic.size() << endl;
+		ofile << "K=" << textonDic.size() << endl;
+
+		//feature extraction				
+		this->generateFVectors(this->foldRect.at(i), i);
 
 		//texton mapping
-		Mat textonMap[5];
-		for (int j = 0; j < this->nfolds; j++){
-			textonMap[j] = textonMapping(fVectors[j], textonDic);	//fVectors, textons Dictionary
-			imwrite(to_string(j) + "textonMap.png", textonMap[j]);
-			showImg(textonMap[j].clone(), (string("textonMap") + to_string(j)).c_str(), false, true);
-		}
+		Mat textonMap;
+		//for (int j = 0; j < this->nfolds; j++){
+		textonMap = textonMapping(fVectors, textonDic);	//fVectors, textons Dictionary
+		imwrite(to_string(i) + "textonMap.png", textonMap);
+		showImg(textonMap.clone(), (string("textonMap") + to_string(i)).c_str(), false, true);
+			
+		//vector free
+		vector<vector<Mat>>().swap(fVectors); fVectors.clear();
+		vector<vector<Mat>>().swap(textonDic); textonDic.clear();
+	}
+
+	for (int i = 0; i < this->nfolds; i++){
+		vector<vector<Mat>>().swap(this->textons[i]);
+		textons[i].clear();
 	}
 
 	cout << "train-success" << endl;
 }
 
 //! testing patch-based textons
-Mat PTexton::test(Mat textonMap, vector<Mat> histDB, int fold){
+vector<Mat> PTexton::test(Mat textonMap, vector<Mat> histDB, int fold){
 	cout << "test start" << endl;
 	
 	Mat trainData;
@@ -364,13 +386,17 @@ Mat PTexton::test(Mat textonMap, vector<Mat> histDB, int fold){
 			n++;
 		}
 	}
-	cout << "train success" << endl;
+	cout << "Knn train success" << endl;
 
+	int minus = 0;
 	cv::KNearest *knn = new KNearest(trainData, trainClass);
-	Mat output = Mat::zeros(textonMap.rows - pSize, textonMap.cols - pSize,CV_32S);
+	vector<Mat> classoutput;
+	for (int i = 0; i < nclass; i++){
+		classoutput.push_back(Mat::zeros(textonMap.rows - minus, textonMap.cols, CV_8U));
+	}
 
 	//trace test map
-	for (int i = half_patch; i < textonMap.rows-2000 - half_patch; i++){
+	for (int i = half_patch; i < textonMap.rows - minus - half_patch; i++){
 		for (int j = half_patch; j < textonMap.cols - half_patch; j++){
 
 			//patch extraction in textonMap
@@ -403,23 +429,31 @@ Mat PTexton::test(Mat textonMap, vector<Mat> histDB, int fold){
 
 			//find nearest neighbor
 			//TODO:revise Knn
-			int knn_k=3;
-			Mat nearests(1, knn_k, CV_32FC1);
-			float response = knn->find_nearest(hist, knn_k);// , 0, 0, nearests, 0);
-			
-			output.at<int>(i - half_patch,j - half_patch) = (int)response;
+			int knn_k=1;
+			//Mat nearests;// = new Mat(1, knn_k, CV_32FC1);
+			//Mat results;
+			float response = knn->find_nearest(hist, knn_k);// , results, nearests);
+			//cout << response << endl;
+			classoutput.at(int(response)).at<uchar>(i,j) = 255;
 		}
 		if (i%100==0)
 			cout << "i=" << i << endl;
 	}
 	cout << "test end" << endl;
-	showImg(output, "output"+to_string(fold), false, true);
-	return output;
+	ofile << "test end" << endl;
+
+	for (int i = 0; i < nclass; i++){
+		imwrite(to_string(fold) + "fold_output_binary_c"+to_string(i)+".png", classoutput.at(i));
+		//showImg(classoutput.at(i), "output"+to_string(fold), true, true);
+	}
+	
+	return classoutput;
 }
 
 //! calculate histogram
 vector<Mat> PTexton::trainHist(Mat textonMap,int fold){
 	cout << "calculateHist start" << endl;
+	ofile << "calculateHist start" << endl;
 
 	//fold generation in reference data
 	vector<Mat> refFolds;
@@ -481,6 +515,7 @@ vector<Mat> PTexton::trainHist(Mat textonMap,int fold){
 	for (int c = 0; c < nclass; c++){
 		int dbSize = histDB[c].size();
 		cout << "DB size:" << dbSize << endl;
+		ofile << "DB size:" << dbSize << endl;
 		if (dbSize == 0){
 			cout << "There are no training data in class " << c << endl;
 			continue;
@@ -503,7 +538,7 @@ bool PTexton::loadReferenceData(){
 	if (referenceData.size() > 0) return true;
 
 	cout << "load reference Data";
-
+	ofile << "load reference Data";
 	//read files in a directory
 	string dir = "reference";
 	std::vector<std::string> vFileNames = GetFileNamesInDirectory(dir);
@@ -514,6 +549,7 @@ bool PTexton::loadReferenceData(){
 		string fname = string(dir) + string("\\") + vFileNames[i];
 
 		cout << "load image:" << fname << endl;
+		ofile << "load image:" << fname << endl;
 
 		Mat img = imread(fname, 0);
 
@@ -523,7 +559,7 @@ bool PTexton::loadReferenceData(){
 
 		resize(img, img, this->imageData.getSize());
 		//normalize(img, img, 0, 255, CV_MINMAX);
-		cout << "resized ref size:" << img.size() << endl;
+		//cout << "resized ref size:" << img.size() << endl;
 		this->referenceData.push_back(img);
 
 		if (!img.data){
@@ -535,6 +571,7 @@ bool PTexton::loadReferenceData(){
 	}
 	this->nclass = (int)referenceData.size();
 	cout << "There are " << (int)referenceData.size() << " classes" << endl;
+	ofile << "There are " << (int)referenceData.size() << " classes" << endl;
 	
 	return true;
 }
@@ -568,6 +605,7 @@ void PTexton::foldGeneration(){
 
 	//// 5-fold cross-validation ////
 	std::cout << "There are " << this->nfolds << " folds" << endl;
+	ofile << "There are " << this->nfolds << " folds" << endl;
 	std::cout << "There are less images than folds" << endl;
 	
 	cv::Size curSize = imageData.getSize();
@@ -577,18 +615,18 @@ void PTexton::foldGeneration(){
 	
 	//use vertical folds
 	for (int i = 0; i < this->nfolds; i++){
-		int x = half_patch + ((width-pSize) / nfolds)*i;
-		int y = half_patch+1000;
-
 		//int w = (width - pSize) / nfolds;
 	//	int h = (height - pSize)/50;
 		int w = (width - pSize) / nfolds;
-		int h = height - pSize-1000;
+		int h = height - pSize;
+		int x = half_patch + w*i;
+		int y = half_patch;
+
 
 		cv::Rect tempRect(x, y, w, h);
 		this->foldRect.push_back(tempRect);
 
-		cout << i << "th fold=" << tempRect << endl;
+		ofile << i << "th fold=" << tempRect << endl;
 	}
 
 	// TODO:if training foldType = 0 else if testing foldType = 1
@@ -605,41 +643,7 @@ void PTexton::evaluate(){
 	foldGeneration();
 	loadReferenceData();
 
-	////// feature extraction ////
-	//for (int j = 0; j < 5;j++){// this->nfolds; j++){
-	//	//feature extraction				
-	//	this->generateFVectors(this->foldRect.at(j),j);
-
-	//	//Random Projection
-	//	//this->RandomProjection(j);
-
-	//	//cluster textons
-	//	this->clusterTextons(j);
-	//}
-
-	
-	vector<Mat> output;
-	//// training and testing in each fold ////
-//	for (int i = 0; i < this->nfolds; i++){
-		// training //// 	
-		//
-		////texton dictionary construction
-		//vector<vector<Mat>> textonDic;
-		//for (int j = 0; j < this->nfolds; j++){
-		//	if (j!=i) //test data isn't included in training data
-		//		textonDic.insert(textonDic.end(), textons[j].begin(), textons[j].end());
-		//}
-
-		////printCenter(centers);
-		//cout << "K=" << textonDic.size() << endl;
-
-		////texton mapping
-		//Mat textonMap[5];
-		//for (int j = 0; j < this->nfolds; j++){
-		//	textonMap[j] = textonMapping(fVectors[j], textonDic);	//fVectors, textons Dictionary
-		//	imwrite(to_string(j) + "textonMap.png", textonMap[j]);
-		//	showImg(textonMap[j].clone(), (string("textonMap") + to_string(j)).c_str(), false, true);
-		//}
+	train();
 
 	Mat textonMap[5];
 	for (int i = 0; i < 5; i++){
@@ -648,6 +652,7 @@ void PTexton::evaluate(){
 		//waitKey(0);
 	}
 
+	vector<Mat> output;
 	for (int i = 0; i < this->nfolds; i++){
 
 		//histogram calculation
@@ -670,13 +675,26 @@ void PTexton::evaluate(){
 			}
 		}
 		
+		vector<Mat> tempoutput = test(textonMap[i].clone(), histDB, i);
 		//testing with i fold
-		output.push_back(test(textonMap[i].clone(), histDB, i));
+		if (output.size() == 0){
+			output = tempoutput;
+		}
+		else{
+			for (int k = 0; k < nclass; k++){
+				Mat newoutput;
+				hconcat(output.at(k), tempoutput.at(k), newoutput);
+				output.at(k) = newoutput.clone();
+			}
+		}
 
 	}
-	Mat classification_result;
-	hconcat(output, classification_result);
-	showImg(classification_result, "final output", false, true);
+
+	//hconcat(output, classification_result);
+	for (int i = 0; i < nclass; i++){
+		imwrite(to_string(i) + "class_output.png", output.at(i));
+		//showImg(output.at(i), to_string(i)+"class_final_output", false, true);
+	}
 	//evaluation
 //	ClassificationError error;
 
@@ -700,14 +718,14 @@ Mat PTexton::RandomProjection(Mat target)
 }
 void PTexton::RandomProjection(int foldN)
 {
-	int highD = fVectors[foldN].at(0).size();
+	int highD = fVectors.at(0).size();
 	int lowD = highD / 3;
 	Mat rMat;
 
 	generateRandomMat(rMat, highD, lowD, "gaussian");//Rmode = "gaussian" or "achlioptas"
 	//cout << rMat << endl;
 
-	cout << "original vector size = " << fVectors[foldN].at(0).size() << endl;
+	//cout << "original vector size = " << fVectors[foldN].at(0).size() << endl;
 	for (int j = 0; j < fVectors[foldN].size(); j++){
 		vector<Mat> highVector = fVectors[foldN].at(j);
 		vector<Mat> lowVector;
@@ -721,15 +739,16 @@ void PTexton::RandomProjection(int foldN)
 			}
 			lowVector.push_back(sum);
 		}
-		fVectors[foldN].at(j) = lowVector;
+		fVectors.at(j) = lowVector;
 	}
-	cout << "after RP, vector size = " << fVectors[foldN].at(0).size() << endl;
+	//cout << "after RP, vector size = " << fVectors[foldN].at(0).size() << endl;
 }
 //! load image data
 bool PTexton::loadImageData(void){
 	ImgData img;
 
 	cout << "file name:" << this->fname << endl;
+	ofile << "file name:" << this->fname << endl;
 
 	if (this->fname.size() > 0){
 		img = ImgData(this->fname, POLSAR);
@@ -782,35 +801,256 @@ void PTexton::printCenter(Mat& centers){
 		waitKey(0);
 	}
 	cout << endl;
+
+
+}
+//! clustering textons by random sampling
+void PTexton::clusterTextons(int num,int sampling){
+
+	cout << "kmeans clustering / K=" << this->K << endl;
+	ofile << "kmeans clustering / K=" << this->K << endl;
+	int foldnum = 0;
+
+	vector<vector<Mat>> centers;
+	//vector<vector<Mat>> oldCenters;
+
+	int fsize = fVectors.size();
+	int vSize = fVectors.at(0).size();
+	Mat label(fsize, 1, CV_32S);
+	cout << "original feature vectors size= " << fsize << endl;
+	ofile << "original feature vectors size= " << fsize << endl;
+
+	vector<vector<Mat>> samples;
+	//RAMDOM SAMPLING FOR DIMENSIONALITY REDUCTION
+	for (int i = 0; i < fsize; i += sampling){
+		samples.push_back(fVectors.at(i));
+	}
+	fsize = samples.size();
+
+	srand(time(NULL));
+	// initialize centers
+	for (int i = 0; i < this->K; i++){
+		int random = rand() % fsize;
+		ofile << "random number = " << random << endl;
+		centers.push_back(samples.at(random));
+
+		//dummy
+		//oldCenters.push_back(samples.at(i));
+	}
+
+
+	const int maxIter = 10;
+	int iter = 0;
+	// loop if stop criteria isn't satisfied
+	while (iter < maxIter){
+		Mat nlabel = Mat::zeros(K, 1, CV_32S);
+
+		//save old center for stop criteria
+		//oldCenters = centers;
+		ofile << "feature vectors size = " << samples.size() << endl;
+		cout << "feature vectors size = " << samples.size() << endl;
+
+
+		//pre-calculation about center//
+		vector<vector<Mat>> invCenters;
+		vector<vector<float>> firstTerms;
+
+		for (int k = 0; k < this->K; k++){	//cluster number
+			vector<Mat> invCenter_k;
+			vector<float> firstTerms_k;
+			for (int m = 0; m < vSize; m++){	//order in a patch
+				if (imgType == POLSAR){
+					//first term calculation
+					float det = determinant_comp(centers.at(k).at(m).clone());
+					if (det < 0){
+						cerr << "Error:det is less than 0" << endl;
+						return;
+					}
+					firstTerms_k.push_back(log(det));
+
+					//second term calculation
+					invCenter_k.push_back(invComplex(centers.at(k).at(m).clone()).clone());
+				}
+			}
+			invCenters.push_back(invCenter_k);
+			firstTerms.push_back(firstTerms_k);
+		}
+
+		//assign labels to dataset
+		for (int i = 0; i < fsize; i++){
+			float dist = 0, minDist = 0;
+
+			//find min_distance with assigning label
+			for (int k = 0; k < this->K; k++){	//cluster number
+				dist = 0;
+				for (int m = 0; m < vSize; m++){	//order in a patch
+					if (imgType == POLSAR){
+						//if (wishartDistance(centers.at(k).at(m).clone(), fVectors[num].at(i).at(m).clone()) == -1){
+						//efficient version
+						float wDist = wishartDistance(firstTerms.at(k).at(m), invCenters.at(k).at(m).clone(), samples.at(i).at(m).clone());
+						if (wDist == -1){
+							cout << "iteration=" << iter << "fold=" << num << ", at=" << i << ",at(in vector)=" << m << endl;
+						}
+						dist += wDist;
+					}
+					else if (imgType == GRAY){
+						dist += abs(samples.at(i).at(m).at<int>(0) - centers.at(k).at(m).at<int>(0));
+					}
+				}
+				dist /= (float)vSize;
+				//cout << "distance=" << dist << ",";
+				if (k == 0){
+					label.at<int>(i) = 0;
+					minDist = dist;
+				}
+				else{
+					if (minDist>dist){
+						label.at<int>(i) = k;
+						minDist = dist;
+					}
+				}
+			}
+			nlabel.at<int>(label.at<int>(i)) += 1;
+			//if (i % 10 == 0)
+			//cout << i << "th vector label=" << label.at<int>(i) << endl;
+
+		}
+		//cout << "assign label -complete" << endl;
+
+		ofile << "nlabel=" << nlabel << endl;
+
+		//calculate new centers
+		//initialize centers
+		vector<vector<Mat>> newcenters;
+		for (int i = 0; i < K; i++){
+			vector<Mat> newcenter;
+			for (int j = 0; j < vSize; j++){
+				newcenter.push_back(Mat::zeros(centers.at(i).at(j).size(), centers.at(i).at(j).type()));
+			}
+			newcenters.push_back(newcenter);
+		}
+		//cout << "initialize centers vector-complete" << endl;
+
+		//integration of feature vector
+		for (int i = 0; i < fsize; i++){
+			for (int j = 0; j < vSize; j++){ //in a patch vector
+				newcenters.at(label.at<int>(i)).at(j) += samples.at(i).at(j).clone();
+			}
+		}
+		//cout << "add feature matrix-complete" << endl;
+
+		//mean of feature vector (centers)
+		for (int i = 0; i < K; i++){
+			for (int j = 0; j < vSize; j++){	//in a patch vector
+				if (nlabel.at<int>(i)>1){
+					newcenters.at(i).at(j) /= (float)nlabel.at<int>(i);
+				}
+			}
+			//cout << "K=" << i << "center matrix" << endl<<newcenters.at(i).at(0) << endl;
+		}
+		cout << "make centers - complete" << endl;
+
+		////improve initial center setting////
+		/*double min, max;
+		Point mini, maxi;
+		minMaxLoc(nlabel, &min, &max, &mini, &maxi);
+		*/
+		bool one = false;
+		for (int i = 0; i < K; i++){
+			if (nlabel.at <int>(i) == 1){
+				int random = rand() % fsize;
+				newcenters.at(i) = samples.at(random);
+				one = true;
+			}
+		}
+
+
+		if (one == true){
+			centers = newcenters;
+			newcenters.clear();
+			continue;
+		}
+		//stop criteria		
+		//oldCenters != centers
+
+		bool same = true;
+		for (int i = 0; i < K; i++){
+			for (int j = 0; j < vSize; j++){
+				Mat diff, diff2;
+				Mat old[2], newc[2];
+				split(centers.at(i).at(j), old);
+				split(newcenters.at(i).at(j), newc);
+				cv::compare(old[0], newc[0], diff, cv::CMP_NE);
+				cv::compare(old[1], newc[1], diff2, cv::CMP_NE);
+				int nz = countNonZero(diff);
+				int nz2 = countNonZero(diff2);
+				if (nz != 0){ same = false;	break; }
+				else{
+					if (nz2 != 0){ same = false; break; }
+				}
+			}
+			if (same == false){ break; }
+		}
+		if (same == true){
+			cout << "iteration stop i = " << iter << endl;
+			break;
+		}
+
+		centers = newcenters;
+		newcenters.clear();
+
+		//nlabel.release();// = Mat::zeros(nlabel.size(), nlabel.type());
+		iter++;
+	}
+
+	cout << "cluster Textons success" << endl;
+	this->textons[num] = centers;
+	centers.clear();
+	//oldCenters.clear();
+	vector<vector<Mat>>().swap(samples);
+	samples.clear();
+
+	/*Mat map(foldRect[num].size(), CV_32S);
+
+	int n = 0;
+	for (int i = 0; i < map.rows; i++){
+		for (int j = 0; j < map.cols; j++){
+			map.at<int>(i, j) = label.at<int>(n);
+			n++;
+		}
+	}
+	showImg(map, "textonMap from K-means_" + to_string(num), false, true);*/
+	//waitKey(0);
+
 }
 
 //! clustering textons
 void PTexton::clusterTextons(int num){
 
 	cout << "kmeans clustering / K=" << this->K << endl;
-
+	ofile << "kmeans clustering / K=" << this->K << endl;
 	int foldnum = 0;
 
 	vector<vector<Mat>> centers;
 	vector<vector<Mat>> oldCenters;
 	
-	int fsize = fVectors[num].size();
-	int vSize = fVectors[num].at(0).size();
+	int fsize = fVectors.size();
+	int vSize = fVectors.at(0).size();
 	Mat label(fsize, 1, CV_32S);
 
 	srand(time(NULL));
 	// initialize centers
 	for (int i = 0; i < this->K; i++){
 		int random = rand() % fsize;
-		cout << "random number = "<<random << endl;
-		centers.push_back(fVectors[num].at(random));
+		ofile << "random number = "<<random << endl;
+		centers.push_back(fVectors.at(random));
 		
 		//dummy
-		oldCenters.push_back(fVectors[num].at(i));
+		oldCenters.push_back(fVectors.at(i));
 	}
 		
 
-	const int maxIter = 10;
+	const int maxIter = 1;
 	int iter = 0;
 	// loop if stop criteria isn't satisfied
 	while (iter < maxIter){
@@ -818,7 +1058,7 @@ void PTexton::clusterTextons(int num){
 
 		//save old center for stop criteria
 		oldCenters = centers;
-		cout << "feature vectors size = " << fVectors[num].size() << endl;
+		ofile << "feature vectors size = " << fVectors.size() << endl;
 		
 
 		//pre-calculation about center//
@@ -857,14 +1097,14 @@ void PTexton::clusterTextons(int num){
 					if (imgType == POLSAR){
 						//if (wishartDistance(centers.at(k).at(m).clone(), fVectors[num].at(i).at(m).clone()) == -1){
 						//efficient version
-						float wDist = wishartDistance(firstTerms.at(k).at(m), invCenters.at(k).at(m).clone(), fVectors[num].at(i).at(m).clone());
+						float wDist = wishartDistance(firstTerms.at(k).at(m), invCenters.at(k).at(m).clone(), fVectors.at(i).at(m).clone());
 						if (wDist==-1){
 							cout << "iteration="<<iter<<"fold=" << num << ", at=" << i <<",at(in vector)="<<m<< endl;
 						}
 							dist += wDist;
 					}
 					else if (imgType == GRAY){
-						dist += abs(fVectors[num].at(i).at(m).at<int>(0) - centers.at(k).at(m).at<int>(0));
+						dist += abs(fVectors.at(i).at(m).at<int>(0) - centers.at(k).at(m).at<int>(0));
 					}
 				}
 				dist /= (float)vSize;
@@ -887,7 +1127,7 @@ void PTexton::clusterTextons(int num){
 		}
 		//cout << "assign label -complete" << endl;
 
-		cout << "nlabel=" << nlabel << endl;
+		ofile << "nlabel=" << nlabel << endl;
 				
 		//calculate new centers
 		//initialize centers
@@ -904,7 +1144,7 @@ void PTexton::clusterTextons(int num){
 		//integration of feature vector
 		for (int i = 0; i < fsize; i++){	
 			for (int j = 0; j < vSize; j++){ //in a patch vector
-				newcenters.at(label.at<int>(i)).at(j) += fVectors[num].at(i).at(j).clone();
+				newcenters.at(label.at<int>(i)).at(j) += fVectors.at(i).at(j).clone();
 			}
 		}
 		//cout << "add feature matrix-complete" << endl;
@@ -958,7 +1198,6 @@ void PTexton::clusterTextons(int num){
 		}
 
 		centers = newcenters;
-		newcenters.clear();
 		//nlabel.release();// = Mat::zeros(nlabel.size(), nlabel.type());
 		iter++;
 	}

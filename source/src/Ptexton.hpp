@@ -15,6 +15,7 @@
 #define PTEXTON_HPP
 
 #include <iostream>
+#include <fstream>
 #include <opencv2/opencv.hpp>
 //#include <opencv2/highgui/highgui.hpp>
 //#include <opencv2/core/core.hpp>
@@ -45,7 +46,7 @@ public:
 	void train();
 	
 	//! testing patch-based textons
-	Mat test(Mat textonMap, vector<Mat> histDB, int fold);
+	vector<Mat> test(Mat textonMap, vector<Mat> histDB, int fold);
 
 	//! evaluate textons
 	void evaluate();
@@ -101,8 +102,12 @@ private:
 	//! apply Random Prjection to feature vector
 	void RandomProjection(int foldN);
 	Mat RandomProjection(Mat target);
+
 	//! clustering textons using train image
 	void clusterTextons(int foldN);
+
+	//! clustering textons using train image by random sampling
+	void clusterTextons(int foldN, int sampling);
 
 	//! measurement of wishart distance
 	float wishartDistance(Mat center, Mat comp);
@@ -136,7 +141,7 @@ private:
 	*		1x3 RGB channel in a pixel if image type is color
 	*		1x1 intensity of a pixel if image type is grayscale
 	*/
-	vector<vector<Mat>> fVectors[5];
+	vector<vector<Mat>> fVectors;
 
 	//! centers from K-means (K textons)
 	vector<vector<Mat>> textons[5];
@@ -144,7 +149,8 @@ private:
 	//! current used image
 	Mat currentImg;
 
-	//! classification (test) result
-	Mat resultImg;
+	//! file outstream
+	ofstream ofile;
+
 };
 #endif /* PTEXTON_HPP*/
