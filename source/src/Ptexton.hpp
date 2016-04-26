@@ -50,7 +50,9 @@ public:
 
 	//! evaluate textons
 	void evaluate();
-
+	
+	void classification();
+	
 	//! visualize center matrix
 	void printCenter(Mat& input);
 
@@ -104,10 +106,10 @@ private:
 	Mat RandomProjection(Mat target);
 
 	//! clustering textons using train image
-	void clusterTextons(int foldN);
+	void clusterTextons();
 
 	//! clustering textons using train image by random sampling
-	void clusterTextons(int foldN, int sampling);
+	void clusterTextons(int sampling);
 
 	//! measurement of wishart distance
 	float wishartDistance(Mat center, Mat comp);
@@ -144,7 +146,7 @@ private:
 	vector<vector<Mat>> fVectors;
 
 	//! centers from K-means (K textons)
-	vector<vector<Mat>> textons[5];
+	vector<vector<Mat>> textons;
 
 	//! current used image
 	Mat currentImg;

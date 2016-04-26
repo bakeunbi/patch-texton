@@ -22,7 +22,7 @@ int main(int argc, char** argv){
 		return 1;
 	}
 	else if (argc < 3){
-		K = 10;
+		K = 40;
 		pSize = 5;
 	}
 	else if (argc < 4){
@@ -42,7 +42,7 @@ int main(int argc, char** argv){
 	//pTexton.train();
 	//pTexton.test();
 	pTexton.evaluate();
-
+//	pTexton.classification();
 	return 0;
 }
 
