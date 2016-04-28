@@ -886,20 +886,11 @@ void PTexton::printCenter(Mat& centers){
 
 }
 //! clustering textons by random sampling
-void PTexton::clusterTextons(int sampling){
-
-	cout << "kmeans clustering / K=" << this->K << endl;
-	ofile << "kmeans clustering / K=" << this->K << endl;
-	int foldnum = 0;
-
-	vector<vector<Mat>> centers;
-	//vector<vector<Mat>> oldCenters;
+void PTexton::initializeCenters(int sampling){
+	ofile << "initialize centers" << endl;
 
 	int fsize = fVectors.size();
 	int vSize = fVectors.at(0).size();
-	Mat label(fsize, 1, CV_32S);
-	cout << "original feature vectors size= " << fsize << endl;
-	ofile << "original feature vectors size= " << fsize << endl;
 
 	vector<vector<Mat>> samples;
 	if (sampling == 0){
@@ -915,28 +906,114 @@ void PTexton::clusterTextons(int sampling){
 		}
 		fsize = samples.size();
 	}
-	// initialize centers
-	for (int i = 0; i < this->K; i++){
-		int random = rand() % (fsize / this->K) + i*(fsize / this->K);
-		ofile << "random number = " << random << endl;
-		centers.push_back(samples.at(random));
 
-		//dummy
-		//oldCenters.push_back(samples.at(i));
+	ofile << "sampled feature vectors size= " << fsize << endl;
+	// initialize centers
+	vector<Mat> init;
+	int random = rand() % fsize;
+	ofile << "random number = " << random << endl;
+	init = samples.at(random);
+
+	vector<Mat> invCenter;
+	vector<float> firstTerms;
+	for (int m = 0; m < vSize; m++){	//order in a patch
+		if (imgType == POLSAR){
+			//first term calculation
+			float det = determinant_comp(init.at(m).clone());
+			if (det < 0){
+				cerr << "Error:det is less than 0" << endl;
+				return;
+			}
+			firstTerms.push_back(log(det));
+
+			//second term calculation
+			invCenter.push_back(invComplex(init.at(m).clone()).clone());
+		}
 	}
 
+	Mat distMap(fsize, 1, CV_32F);
+	//assign labels to dataset
+	for (int i = 0; i < fsize; i++){
+		float dist = 0;
 
-	const int maxIter = 3;
+		//find min_distance with assigning label
+		for (int m = 0; m < vSize; m++){	//order in a patch
+			float wDist = wishartDistance(firstTerms.at(m), invCenter.at(m).clone(), samples.at(i).at(m).clone());
+			dist += wDist;			
+		}
+		dist /= (float)vSize;
+
+		distMap.at<float>(i) = dist;			
+	}
+	//cout << distMap << endl;
+	Mat sortedMap;
+	sortIdx(distMap, sortedMap, CV_SORT_EVERY_COLUMN + CV_SORT_ASCENDING);
+	//cout << sortedMap << endl;
+
+	vector<vector<Mat>> newcenters;
+	for (int i = 0; i < K; i++){
+		vector<Mat> newcenter;
+		for (int j = 0; j < vSize; j++){
+			newcenter.push_back(Mat::zeros(init.at(j).size(),init.at(j).type()));
+		}
+		newcenters.push_back(newcenter);
+	}
+	
+	//integration of feature vector
+	for (int k = 0; k < this->K; k++){
+		int index = sortedMap.at<int>(k*(fsize / K));
+		cout << index << endl;
+		for (int j = 0; j < vSize; j++){ //in a patch vector
+			newcenters.at(k).at(j) = samples.at(index).at(j).clone();
+		}
+	}
+	this->textons = newcenters;
+	cout << "initialize centers success" << endl;
+
+	vector<vector<Mat>>().swap(samples);
+	samples.clear();
+
+}
+//! clustering textons by random sampling
+void PTexton::clusterTextons(){
+
+	cout << "kmeans clustering / K=" << this->K << endl;
+	ofile << "kmeans clustering / K=" << this->K << endl;
+	
+	// initialize centers
+	//int sampling = 15000;
+	//this->initializeCenters(sampling);
+	//this->clusterTextons(sampling);
+
+	vector<vector<Mat>> centers;// = textons;
+	//vector<vector<Mat>> oldCenters;
+
+	int fsize = fVectors.size();
+	int vSize = fVectors.at(0).size();
+	Mat label(fsize, 1, CV_32S);
+	cout << "original feature vectors size= " << fsize << endl;
+	ofile << "original feature vectors size= " << fsize << endl;
+	
+	srand((unsigned)time(NULL));
+
+	vector<vector<Mat>> samples;
+	for (int i = 0; i < fsize/100; i++){
+		int r = rand() % fsize;
+		samples.push_back(fVectors.at(r));
+	}
+	fsize = samples.size();
+
+	for (int i = 0; i < K; i++){
+		int random = rand() % fsize;
+		centers.push_back(samples.at(random));
+	}
+
+	const int maxIter = 10;
 	int iter = 0;
 	// loop if stop criteria isn't satisfied
 	while (iter < maxIter){
 		Mat nlabel = Mat::zeros(K, 1, CV_32S);
 
-		//save old center for stop criteria
-		//oldCenters = centers;
-		ofile << "feature vectors size = " << samples.size() << endl;
-		cout << "feature vectors size = " << samples.size() << endl;
-		
 		//pre-calculation about center//
 		vector<vector<Mat>> invCenters;
 		vector<vector<float>> firstTerms;
@@ -961,6 +1038,7 @@ void PTexton::clusterTextons(int sampling){
 			invCenters.push_back(invCenter_k);
 			firstTerms.push_back(firstTerms_k);
 		}
+		//cout << "center pre-calculation" << endl;
 
 		//assign labels to dataset
 		for (int i = 0; i < fsize; i++){
@@ -970,19 +1048,10 @@ void PTexton::clusterTextons(int sampling){
 			for (int k = 0; k < this->K; k++){	//cluster number
 				dist = 0;
 				for (int m = 0; m < vSize; m++){	//order in a patch
-					if (imgType == POLSAR){
-						//if (wishartDistance(centers.at(k).at(m).clone(), fVectors[num].at(i).at(m).clone()) == -1){
-						//efficient version
-						float wDist = wishartDistance(firstTerms.at(k).at(m), invCenters.at(k).at(m).clone(), samples.at(i).at(m).clone());
-						//if (wDist == -1){
-						//	cout << "iteration=" << iter << "fold=" << num << ", at=" << i << ",at(in vector)=" << m << endl;
-						//}
-						dist += wDist;
-					}
-					else if (imgType == GRAY){
-						dist += abs(samples.at(i).at(m).at<int>(0) - centers.at(k).at(m).at<int>(0));
-					}
+					float wDist = wishartDistance(firstTerms.at(k).at(m), invCenters.at(k).at(m).clone(), samples.at(i).at(m).clone());
+					dist += wDist;
 				}
+
 				dist /= (float)vSize;
 				//cout << "distance=" << dist << ",";
 				if (k == 0){
@@ -997,7 +1066,7 @@ void PTexton::clusterTextons(int sampling){
 				}
 			}
 			nlabel.at<int>(label.at<int>(i)) += 1;
-			//if (i % 10 == 0)
+			//if (i % 1000 == 0)
 			//cout << i << "th vector label=" << label.at<int>(i) << endl;
 
 		}
@@ -1006,24 +1075,7 @@ void PTexton::clusterTextons(int sampling){
 		ofile << "nlabel=" << nlabel << endl;
 		cout << "nlabel=" << nlabel << endl;
 
-		////improve initial center setting////	
-		//double min, max; Point mini, maxi;
-		//minMaxLoc(nlabel, &min, &max, &mini, &maxi);
-		//cout << "mat label=" << maxi.y << endl;
-		bool one = false;
-		for (int i = 0; i < K; i++){
-			if (nlabel.at <int>(i) < 3){
-				one = true; break;
-			}
-		}
-		if (one){
-			for (int i = 0; i < K; i++){
-				int random = rand() % (fsize / this->K) + i*(fsize / this->K);
-				centers.at(i) = samples.at(random);
-			}
-			
-			continue;
-		}
+		
 		//calculate new centers
 		//initialize centers
 		vector<vector<Mat>> newcenters;
@@ -1054,7 +1106,26 @@ void PTexton::clusterTextons(int sampling){
 			//cout << "K=" << i << "center matrix" << endl<<newcenters.at(i).at(0) << endl;
 		}
 		cout << "make centers - complete" << endl;
-				
+		////improve initial center setting////	
+		//double min, max; Point mini, maxi;
+		//minMaxLoc(nlabel, &min, &max, &mini, &maxi);
+		//cout << "mat label=" << maxi.y << endl;
+		bool one = false;
+		for (int i = 0; i < K; i++){
+			if (nlabel.at <int>(i) == 1){
+				int random = rand() % fsize;
+				centers.at(i) = samples.at(random);
+				one = true;
+			}
+		}
+		/*if (one){
+		for (int i = 0; i < K; i++){
+		int random = rand() % (fsize / this->K) + i*(fsize / this->K);
+		centers.at(i) = samples.at(random);
+		}
+
+		continue;
+		}*/
 		centers = newcenters;
 		newcenters.clear();
 
@@ -1064,25 +1135,25 @@ void PTexton::clusterTextons(int sampling){
 
 		/*bool same = true;
 		for (int i = 0; i < K; i++){
-			for (int j = 0; j < vSize; j++){
-				Mat diff, diff2;
-				Mat old[2], newc[2];
-				split(centers.at(i).at(j), old);
-				split(newcenters.at(i).at(j), newc);
-				cv::compare(old[0], newc[0], diff, cv::CMP_NE);
-				cv::compare(old[1], newc[1], diff2, cv::CMP_NE);
-				int nz = countNonZero(diff);
-				int nz2 = countNonZero(diff2);
-				if (nz != 0){ same = false;	break; }
-				else{
-					if (nz2 != 0){ same = false; break; }
-				}
-			}
-			if (same == false){ break; }
+		for (int j = 0; j < vSize; j++){
+		Mat diff, diff2;
+		Mat old[2], newc[2];
+		split(centers.at(i).at(j), old);
+		split(newcenters.at(i).at(j), newc);
+		cv::compare(old[0], newc[0], diff, cv::CMP_NE);
+		cv::compare(old[1], newc[1], diff2, cv::CMP_NE);
+		int nz = countNonZero(diff);
+		int nz2 = countNonZero(diff2);
+		if (nz != 0){ same = false;	break; }
+		else{
+		if (nz2 != 0){ same = false; break; }
+		}
+		}
+		if (same == false){ break; }
 		}
 		if (same == true){
-			cout << "iteration stop i = " << iter << endl;
-			break;
+		cout << "iteration stop i = " << iter << endl;
+		break;
 		}*/
 	}
 
@@ -1093,30 +1164,17 @@ void PTexton::clusterTextons(int sampling){
 	vector<vector<Mat>>().swap(samples);
 	samples.clear();
 
-	/*Mat map(foldRect[num].size(), CV_32S);
-
-	int n = 0;
-	for (int i = 0; i < map.rows; i++){
-		for (int j = 0; j < map.cols; j++){
-			map.at<int>(i, j) = label.at<int>(n);
-			n++;
-		}
-	}
-	showImg(map, "textonMap from K-means_" + to_string(num), false, true);*/
-	//waitKey(0);
-
 }
-//! clustering textons by random sampling
-void PTexton::clusterTextons(){
+void PTexton::clusterTextons(int sampling){
 
 	cout << "kmeans clustering / K=" << this->K << endl;
 	ofile << "kmeans clustering / K=" << this->K << endl;
-	
-	// initialize centers
-	int sampling = 3000;
-	this->clusterTextons(sampling);
 
-	vector<vector<Mat>> centers = textons;
+	// initialize centers
+	//int sampling = 15000;
+	//this->initializeCenters(sampling);
+
+	vector<vector<Mat>> centers;// = textons;
 	//vector<vector<Mat>> oldCenters;
 
 	int fsize = fVectors.size();
@@ -1125,20 +1183,26 @@ void PTexton::clusterTextons(){
 	cout << "original feature vectors size= " << fsize << endl;
 	ofile << "original feature vectors size= " << fsize << endl;
 
-	vector<vector<Mat>> samples= fVectors;
-
 	srand((unsigned)time(NULL));
-	
-	const int maxIter = 10;
+
+	vector<vector<Mat>> samples;
+	for (int i = 0; i < sampling; i++){
+		int r = rand() % fsize;
+		samples.push_back(fVectors.at(r));
+	}
+	fsize = samples.size();
+	cout << "feature vectors size= " << fsize << endl;
+
+	for (int i = 0; i < K; i++){
+		int random = rand() % fsize;
+		centers.push_back(samples.at(random));
+	}
+
+	const int maxIter = 3;
 	int iter = 0;
 	// loop if stop criteria isn't satisfied
 	while (iter < maxIter){
 		Mat nlabel = Mat::zeros(K, 1, CV_32S);
-
-		//save old center for stop criteria
-		//oldCenters = centers;
-		ofile << "feature vectors size = " << samples.size() << endl;
-		cout << "feature vectors size = " << samples.size() << endl;
 
 		//pre-calculation about center//
 		vector<vector<Mat>> invCenters;
@@ -1164,6 +1228,7 @@ void PTexton::clusterTextons(){
 			invCenters.push_back(invCenter_k);
 			firstTerms.push_back(firstTerms_k);
 		}
+		cout << "center pre-calculation" << endl;
 
 		//assign labels to dataset
 		for (int i = 0; i < fsize; i++){
@@ -1173,19 +1238,10 @@ void PTexton::clusterTextons(){
 			for (int k = 0; k < this->K; k++){	//cluster number
 				dist = 0;
 				for (int m = 0; m < vSize; m++){	//order in a patch
-					if (imgType == POLSAR){
-						//if (wishartDistance(centers.at(k).at(m).clone(), fVectors[num].at(i).at(m).clone()) == -1){
-						//efficient version
-						float wDist = wishartDistance(firstTerms.at(k).at(m), invCenters.at(k).at(m).clone(), samples.at(i).at(m).clone());
-						//if (wDist == -1){
-						//	cout << "iteration=" << iter << "fold=" << num << ", at=" << i << ",at(in vector)=" << m << endl;
-						//}
-						dist += wDist;
-					}
-					else if (imgType == GRAY){
-						dist += abs(samples.at(i).at(m).at<int>(0) - centers.at(k).at(m).at<int>(0));
-					}
+					float wDist = wishartDistance(firstTerms.at(k).at(m), invCenters.at(k).at(m).clone(), samples.at(i).at(m).clone());
+					dist += wDist;
 				}
+
 				dist /= (float)vSize;
 				//cout << "distance=" << dist << ",";
 				if (k == 0){
@@ -1200,8 +1256,8 @@ void PTexton::clusterTextons(){
 				}
 			}
 			nlabel.at<int>(label.at<int>(i)) += 1;
-			//if (i % 10 == 0)
-			//cout << i << "th vector label=" << label.at<int>(i) << endl;
+			//if (i % 1000 == 0)
+				//cout << i << "th vector label=" << label.at<int>(i) << endl;
 
 		}
 		//cout << "assign label -complete" << endl;
@@ -1209,10 +1265,6 @@ void PTexton::clusterTextons(){
 		ofile << "nlabel=" << nlabel << endl;
 		cout << "nlabel=" << nlabel << endl;
 
-		////improve initial center setting////	
-		//double min, max; Point mini, maxi;
-		//minMaxLoc(nlabel, &min, &max, &mini, &maxi);
-		//cout << "mat label=" << maxi.y << endl;
 		bool one = false;
 		for (int i = 0; i < K; i++){
 			if (nlabel.at <int>(i) == 1){
@@ -1262,31 +1314,6 @@ void PTexton::clusterTextons(){
 		newcenters.clear();
 
 		iter++;
-		//stop criteria		
-		//oldCenters != centers
-
-		/*bool same = true;
-		for (int i = 0; i < K; i++){
-		for (int j = 0; j < vSize; j++){
-		Mat diff, diff2;
-		Mat old[2], newc[2];
-		split(centers.at(i).at(j), old);
-		split(newcenters.at(i).at(j), newc);
-		cv::compare(old[0], newc[0], diff, cv::CMP_NE);
-		cv::compare(old[1], newc[1], diff2, cv::CMP_NE);
-		int nz = countNonZero(diff);
-		int nz2 = countNonZero(diff2);
-		if (nz != 0){ same = false;	break; }
-		else{
-		if (nz2 != 0){ same = false; break; }
-		}
-		}
-		if (same == false){ break; }
-		}
-		if (same == true){
-		cout << "iteration stop i = " << iter << endl;
-		break;
-		}*/
 	}
 
 	cout << "cluster Textons success" << endl;
@@ -1295,19 +1322,6 @@ void PTexton::clusterTextons(){
 	//oldCenters.clear();
 	vector<vector<Mat>>().swap(samples);
 	samples.clear();
-
-	/*Mat map(foldRect[num].size(), CV_32S);
-
-	int n = 0;
-	for (int i = 0; i < map.rows; i++){
-	for (int j = 0; j < map.cols; j++){
-	map.at<int>(i, j) = label.at<int>(n);
-	n++;
-	}
-	}
-	showImg(map, "textonMap from K-means_" + to_string(num), false, true);*/
-	//waitKey(0);
-
 }
 
 float PTexton::wishartDistance(float firstTerm, Mat invCenter, Mat comp){	//input ::region for training and testing

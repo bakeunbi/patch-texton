@@ -107,9 +107,11 @@ private:
 
 	//! clustering textons using train image
 	void clusterTextons();
+	//! clustering textons using train image
+	void clusterTextons(int sampling);
 
 	//! clustering textons using train image by random sampling
-	void clusterTextons(int sampling);
+	void initializeCenters(int sampling);
 
 	//! measurement of wishart distance
 	float wishartDistance(Mat center, Mat comp);

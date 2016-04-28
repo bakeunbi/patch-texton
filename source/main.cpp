@@ -22,7 +22,7 @@ int main(int argc, char** argv){
 		return 1;
 	}
 	else if (argc < 3){
-		K = 40;
+		K = 20;
 		pSize = 5;
 	}
 	else if (argc < 4){
