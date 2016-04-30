@@ -13,7 +13,7 @@ using namespace std;
 
 int main(int argc, char** argv){
    
-	int pSize, K;
+	int pSize=3, K=3, knn=1;
 	string RP = "no";
 	//patchTextons.exe data.rat K pSize RP_Type	//image_type
 
@@ -22,28 +22,22 @@ int main(int argc, char** argv){
 		return 1;
 	}
 	else if (argc < 3){
-		K = 20;
-		pSize = 5;
 	}
 	else if (argc < 4){
 		K = atoi(argv[2]);
 	}
 	else if (argc < 5){
+		K = atoi(argv[2]);
 		pSize = atoi(argv[3]);
 	}
 	else if (argc < 6){
-		 RP= argv[4];
+		 knn = atoi(argv[4]);
 	}
 
 	string fname = argv[1];
-	PTexton pTexton(fname,pSize,K,RP);	//file name, patch size, K,RP
+	PTexton pTexton(fname,pSize,K,knn);	//file name, patch size, K,RP
 	
-	//pTexton.learningTexton();
-	//pTexton.train();
-	//pTexton.test();
-	//pTexton.evaluate();
-	pTexton.errorAssessment();
-//	pTexton.classification();
+	pTexton.evaluate();
 	return 0;
 }
 

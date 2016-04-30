@@ -33,7 +33,7 @@ using namespace cv;
 class PTexton{
 public:
 	//! the constructor
-	PTexton(string fname, int patchSize, int K, string RP);
+	PTexton(string fname, int patchSize, int K, int knn);
 
 	//! the destructor
 	~PTexton(void);
@@ -87,6 +87,8 @@ public:
 
 	//! K for K-means
 	int K;
+
+	int knn;
 
 	int half_patch;
 

@@ -69,19 +69,19 @@ cv::Mat invComplex(const cv::Mat& m)
 	return inverse;
 }
 //! the constructor
-PTexton::PTexton(string fname, int patchSize, int K, string rp){
+PTexton::PTexton(string fname, int patchSize, int K, int knn){
 	
 	this->nfolds = 5;
 	this->imgType = POLSAR;
-
+	this->knn = knn;
 	this->fname = fname;
 	this->pSize = patchSize;
 	this->half_patch = this->pSize / 2;
-	this->K = K/(nfolds-1);
-	this->RP = rp;
+	this->K = K;
+	//this->RP = rp;
 
 //	this->vSize = 0;
-	ofile.open(to_string(K) + "K" + to_string(pSize) + "p" + "Experimental data.txt");
+	ofile.open(to_string(K*4) + "K" + to_string(pSize) + "p" + "Experimental data.txt");
 
 	if (this->loadImageData()){
 		cout << "loadImageData successfully" << endl;
@@ -364,7 +364,7 @@ void PTexton::train(){
 }
 
 //! testing patch-based textons
-vector<Mat> PTexton::histMatching(Mat textonMap, vector<Mat> histDB, int fold){
+vector<Mat> PTexton::histMatching(Mat textonMap, vector<Mat> histDBi, int fold){
 	cout << "test start" << endl;
 	ofile << "test start" << endl;
 
@@ -372,7 +372,7 @@ vector<Mat> PTexton::histMatching(Mat textonMap, vector<Mat> histDB, int fold){
 	//Random Projection
 	if (this->RP == "yes"){
 		Mat oneDB;
-		vconcat(histDB, oneDB);
+		vconcat(histDBi, oneDB);
 
 		vector<Mat> reduced;	//reduced
 		for (int i = 0; i < oneDB.rows; i++){
@@ -383,15 +383,15 @@ vector<Mat> PTexton::histMatching(Mat textonMap, vector<Mat> histDB, int fold){
 		vconcat(reduced, trainData);
 	}
 	else{
-		vconcat(histDB, trainData);
+		vconcat(histDBi, trainData);
 	}
 	//K-nn training
 	trainData.convertTo(trainData, CV_32F);
 	Mat trainClass(trainData.rows,1,CV_32SC1);
 
 	int n = 0;
-	for (int i = 0; i < histDB.size(); i++){
-		for (int j = 0; j < histDB.at(i).rows; j++){
+	for (int i = 0; i < histDBi.size(); i++){
+		for (int j = 0; j < histDBi.at(i).rows; j++){
 			trainClass.at<int>(n) = i;
 			n++;
 		}
@@ -402,7 +402,7 @@ vector<Mat> PTexton::histMatching(Mat textonMap, vector<Mat> histDB, int fold){
 	int minus = 0;
 	cv::KNearest *knn = new KNearest(trainData, trainClass);
 
-	Mat histograms((textonMap.rows-minus-(pSize-1))*(textonMap.cols-(pSize-1)),histDB.at(0).cols, CV_32F);
+	Mat histograms((textonMap.rows - minus - (pSize - 1))*(textonMap.cols - (pSize - 1)), histDBi.at(0).cols, CV_32F);
 
 	//trace test map
 	n = 0; 
@@ -416,7 +416,7 @@ vector<Mat> PTexton::histMatching(Mat textonMap, vector<Mat> histDB, int fold){
 			patch.convertTo(patch, CV_32F);
 
 			//calculation of histogram in each patch
-			int histSize = this->K;
+			int histSize = histDBi.at(0).cols;
 			float range[] = { 0, histSize };
 			const float* histRange = { range };
 			bool uniform = true; bool accumulate = false;
@@ -445,10 +445,10 @@ vector<Mat> PTexton::histMatching(Mat textonMap, vector<Mat> histDB, int fold){
 			cout << "i=" << i << endl;
 	}
 	//TODO:revise Knn: a hist -> hists for find_nearest
-	int knn_k=1;
+	int knn_k=this->knn;
 	//Mat nearests;// = new Mat(1, knn_k, CV_32FC1);
 	Mat results;
-	cout << "histogram size" << histograms.rows << endl;
+	cout << "histogram size" << histograms.size()<< endl;
 
 	//find nearest neighbor
 	float response = knn->find_nearest(histograms, knn_k, &results);// , results, nearests);
@@ -513,7 +513,7 @@ vector<Mat> PTexton::learnHist(Mat textonMap, int fold){
 			patch.convertTo(patch, CV_32F);
 			//cout << patch << endl;
 			//calculation of histogram in each patch
-			int histSize = this->K;
+			int histSize = this->K*4;
 			float range[] = { 0, histSize };
 			const float* histRange = { range };
 			bool uniform = true; bool accumulate = false;
