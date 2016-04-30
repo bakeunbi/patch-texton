@@ -2,6 +2,7 @@
 #define CLASSIFICATIONERROR_H
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <list>
 #include <vector>
@@ -17,7 +18,8 @@ class ClassificationError{
     //! constructor
     ClassificationError(void);
     //! constructor
-    ClassificationError(vector< vector<Mat> >& reference, vector< vector<Mat> >& estimate, int fold, vector<Mat>& foldID);
+	ClassificationError(vector< vector<Mat> >& reference, vector< vector<Mat> >& estimate, int fold, vector<Mat>& foldID);
+	ClassificationError(vector< vector<Mat> >& reference, vector< vector<Mat> >& estimate);
     //! constructor
     ClassificationError(vector< ClassificationError*>& cvError);
     //! destructor
@@ -38,7 +40,7 @@ class ClassificationError{
     Mat getConfusionLoss(int d);
     //! get error statistics
     vector<Mat> getStats(int d);
-    
+	ofstream fout;
   private:
     //! average absolute difference on training and test-set
     double errAbs[2];

@@ -41,7 +41,8 @@ int main(int argc, char** argv){
 	//pTexton.learningTexton();
 	//pTexton.train();
 	//pTexton.test();
-	pTexton.evaluate();
+	//pTexton.evaluate();
+	pTexton.errorAssessment();
 //	pTexton.classification();
 	return 0;
 }

@@ -23,6 +23,7 @@
 
 #include "Tools.hpp"
 #include "ImgData.h"
+#include "ClassificationError.h"
 //#include "Evaluation.h"
 
 
@@ -39,26 +40,6 @@ public:
 
 	enum TYPE { GRAY = 1, COLOR, POLSAR = 4 };
 
-	//! learning textons
-	void learningTexton(void);
-
-	//! training patch-based textons
-	void train();
-	
-	//! testing patch-based textons
-	vector<Mat> test(Mat textonMap, vector<Mat> histDB, int fold);
-
-	//! evaluate textons
-	void evaluate();
-	
-	void classification();
-	
-	//! visualize center matrix
-	void printCenter(Mat& input);
-
-	//! show and write outputImage and apply colormap
-	void showImg(Mat img, string win, bool show, bool save);
-
 	//! load image data
 	bool loadImageData(void);
 
@@ -70,6 +51,27 @@ public:
 
 	//! fold data generation
 	void foldGeneration();
+
+	//! learning textons
+	void learningTexton(void);
+
+	//! training patch-based textons
+	void train();
+	
+	//! only include test stage
+	void test();
+
+	//! evaluate all folds
+	void evaluate();
+	
+	//! read image and compute classification errors
+	void errorAssessment();
+	
+	//! visualize center matrix
+	void printCenter(Mat& input);
+
+	//! show and write outputImage and apply colormap
+	void showImg(Mat img, string win, bool show, bool save);
 
 	//! fold data vector
 	vector<cv::Rect> foldRect;
@@ -94,24 +96,21 @@ public:
 
 	int nclass;
 private:
-	
+
 	//! extract feature vectors
-	void generateFVectors(cv::Rect region, int foldN);
-	
-	//! generate random matrix for random projection
-	void generateRandomMat(Mat& randomMat, int highD, int lowD, string rMode);
-
-	//! apply Random Prjection to feature vector
-	void RandomProjection(int foldN);
-	Mat RandomProjection(Mat target);
+	void generateFVectors(cv::Rect region);
 
 	//! clustering textons using train image
-	void clusterTextons();
-	//! clustering textons using train image
-	void clusterTextons(int sampling);
+	void clusterTextons(int fold);
 
-	//! clustering textons using train image by random sampling
+	//! clustering textons using train image
+	void clusterTextons(int fold, int sampling);
+
+	//! clustering textons using train image by pre-calculation
 	void initializeCenters(int sampling);
+
+	//! testing patch-based textons
+	vector<Mat> histMatching(Mat textonMap, vector<Mat> histDB, int fold);
 
 	//! measurement of wishart distance
 	float wishartDistance(Mat center, Mat comp);
@@ -122,9 +121,16 @@ private:
 	//! map textons to each pixel
 	Mat textonMapping(vector<vector<Mat>> tfvectors, vector<vector<Mat>> testonDic);
 	
+	//! generate random matrix for random projection
+	void generateRandomMat(Mat& randomMat, int highD, int lowD, string rMode);
+
+	//! apply Random Prjection to feature vector
+	void RandomProjection(int foldN);
+	Mat RandomProjection(Mat target);
+
 	//! calculate histogram
 	//! input: vector<Mat> histogram DB of a fold (Mat is histograms in a class)
-	vector<Mat> trainHist(Mat textonMap, int fold);
+	vector<Mat> learnHist(Mat textonMap, int fold);
 	
 	//! the image data during training and evaluation
 	ImgData imageData;
@@ -137,7 +143,7 @@ private:
 	vector<int> nPatches;
 
 	//! histogram of training
-	//Mat histDB;
+	vector<Mat> histDB[5];
 
 	/*
 	* fVectors includes feature vectors(vector<Mat> fVec)
@@ -148,7 +154,7 @@ private:
 	vector<vector<Mat>> fVectors;
 
 	//! centers from K-means (K textons)
-	vector<vector<Mat>> textons;
+	vector<vector<Mat>> textons[5];
 
 	//! current used image
 	Mat currentImg;

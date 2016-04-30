@@ -3,8 +3,9 @@
 // "fold" is the number of the current fold. "foldID" stores for each pixel in each image to which fold it belongs, 
 // ie. whether it has to be regarded as training or test data within the current fold.
 // default constructor
-ClassificationError::ClassificationError(vector< vector<Mat> >& reference, vector< vector<Mat> >& estimate, int fold, vector<Mat>& foldID){
+ClassificationError::ClassificationError(vector< vector<Mat> >& reference, vector< vector<Mat> >& estimate){//, int fold, vector<Mat>& foldID){
 
+	fout.open("classification assessment.txt");
   // mean
   this->errAbs[0] = this->errAbs[1] = this->errLoss[0] = this->errLoss[1] = this->margin[0] = this->margin[1] = 0;
   // standard deviation
@@ -18,7 +19,7 @@ ClassificationError::ClassificationError(vector< vector<Mat> >& reference, vecto
   
   // some temporary variables
   Mat tmp;
-  double count[2] = {0, 0};
+  double count[2] = {1, 0};
   double e, curProb_ref, curProb_est, maxProb_ref, maxProb_est, sndMaxProb_ref, sndMaxProb_est;
   int bestClass_ref, bestClass_est;
   
@@ -28,11 +29,17 @@ ClassificationError::ClassificationError(vector< vector<Mat> >& reference, vecto
   }
   
   // loop through images
-  int i = 0, isTestData;
+  int i = 0;// , isTestData;
   for(vector< vector<Mat> >::iterator ref=reference.begin(), est=estimate.begin(); ref != reference.end(); ref++, est++, i++){
+
+	  for (int c = 0; c<(*ref).size(); c++){
+		  cout << (*est).at(c).size() << endl;
+		  cout << (*ref).at(c).size() << endl;
+	  }
+
       // loop through all pixel
-      for(int y=0; y<(*ref).at(0).rows; y++){
-		  for(int x=0; x<(*ref).at(0).cols; x++){
+      for(int y=0; y<(*est).at(0).rows; y++){
+		  for(int x=0; x<(*est).at(0).cols; x++){
 
 			  // if no class was defined in reference data, this pixel wont count in accuracy assessment
 			  double sum_est, sum_ref;
@@ -74,10 +81,11 @@ ClassificationError::ClassificationError(vector< vector<Mat> >& reference, vecto
 					  sndMaxProb_est = curProb_est;
 				  }
 				  // store absolute difference
+				  //cout << "curProb_ref=" << curProb_ref << ", curProb_est" << curProb_est << endl;
 				  e += abs(curProb_ref - curProb_est);
 			  }
 			  
-			  bool isTestData = (foldID.at(i).at<uchar>(min(y, foldID.at(i).rows-1),min(x, foldID.at(i).cols-1)) == fold);
+			  bool isTestData = true;// (foldID.at(i).at<uchar>(min(y, foldID.at(i).rows - 1), min(x, foldID.at(i).cols - 1)) == fold);
 			  
 			  for(int c=0; c<(*ref).size(); c++){
 				  for(int t=0; t<=10; t++){
@@ -102,6 +110,7 @@ ClassificationError::ClassificationError(vector< vector<Mat> >& reference, vecto
 				  }
 			  }
 			  // add absolute difference of current pixel to overall sum
+			  //cout << "n of classes=" << numberOfClasses <<", e="<<e << endl;
 			  this->errAbs[isTestData] += e/numberOfClasses;
 			  // check if another class as the true class was estimated, and if so, denote it as error
 			  if (bestClass_ref != bestClass_est){
@@ -126,6 +135,7 @@ ClassificationError::ClassificationError(vector< vector<Mat> >& reference, vecto
 			  count[isTestData]++;
 		  }
       }   
+	  cout << "i=" <<i<< endl;
   }
     
   // normalize errors
@@ -235,277 +245,10 @@ ClassificationError::ClassificationError(vector< ClassificationError*>& cvError)
 
 // destructor
 ClassificationError::~ClassificationError(void){
-  
+	fout.close();
   // nothing to do
 
 }
-
-/*
-// estimate individual error of one fold using trival uniform-classificator
-void ClassificationError::estimate(list< vector<Mat> >& refData, int fold, int numberOfFolds, bool horizontalFolds){
-
-  // allocate and init confusion matrices
-  double numberOfClasses = refData.front().size();
-  this->confusionAbs[0] = Mat::zeros(numberOfClasses, numberOfClasses+1, CV_32FC1);
-  this->confusionAbs[1] = Mat::zeros(numberOfClasses, numberOfClasses+1, CV_32FC1);
-  this->confusionLoss[0] = Mat::zeros(numberOfClasses, numberOfClasses+1, CV_32FC1);
-  this->confusionLoss[1] = Mat::zeros(numberOfClasses, numberOfClasses+1, CV_32FC1);
-
-  // some temporary variables
-  Mat tmp;
-  double count[2] = {0, 0};
-  double e, curProb_ref, curProb_est, maxProb_ref, maxProb_est, sndMaxProb_ref, sndMaxProb_est;
-  int bestClass_ref, bestClass_est;
-  // loop through images
-  int i = 0, isTestData;
-  for(list< vector<Mat> >::iterator ref=refData.begin(); ref != refData.end(); ref++, i++){
-
-      vector<Mat> est;
-      Mat sum = Mat::zeros( (*ref).front().rows, (*ref).front().cols, CV_32FC1 );
-
-      for(int c=0; c<(*ref).size(); c++){
-		  Mat tmp = Mat( (*ref).front().rows, (*ref).front().cols, CV_32FC1 );
-
-		  randu( tmp, 1, 100 );
-		  sum += tmp;
-
-		  est.push_back(tmp);
-      }
-
-      for(int c=0; c<(*ref).size(); c++){
-		divide(est.at(c), sum, est.at(c));
-      }
-
-      // if there are less folds than images; each fold consists of a subset of images (if not it consists of image parts)
-      if (numberOfFolds <= refData.size()){
-		  // check if current image is part of test- or training set
-		  if ((i % numberOfFolds) == fold)
-			  isTestData = 1;
-		  else
-			  isTestData = 0;
-      }
-      // loop through all pixel
-      for(int y=0; y<(*ref).at(0).rows; y++){
-		  for(int x=0; x<(*ref).at(0).cols; x++){
-
-			  // if there are more folds than images, each fold consists of image parts
-			  if (numberOfFolds > refData.size()){
-				  if (horizontalFolds){
-					  // check if current pixel belongs to test- or trainings data
-					  int width = (*ref).at(0).cols/numberOfFolds;
-					  if ((x >= fold*width) and (x < (fold+1)*width))
-						isTestData = 1;
-					  else
-						isTestData = 0;
-				  }else{
-					  // check if current pixel belongs to test- or trainings data
-					  int height = (*ref).at(0).rows/numberOfFolds;
-					  if ((y >= fold*height) and (y < (fold+1)*height))
-						isTestData = 1;
-					  else
-						isTestData = 0;
-				  }
-			  }
-
-			  e = 0;
-			  maxProb_ref = maxProb_est = sndMaxProb_ref = sndMaxProb_est = -1;
-			  bestClass_ref = bestClass_est = -1;
-			  // loop through classes
-			  // seek maximum class-probability in reference and estimation data
-			  for(int c=0; c<(*ref).size(); c++){
-				  // get probability of this class within the reference data
-				  curProb_ref = (*ref).at(c).at<float>(y, x);
-				  // get probability of this class within the estimation
-				  curProb_est = (est).at(c).at<float>(y, x);
-				  // seek probability of best class in reference data
-				  if (maxProb_ref < curProb_ref){
-					  sndMaxProb_ref = maxProb_ref;
-					  maxProb_ref = curProb_ref;
-					  bestClass_ref = c;
-				  }
-				  // seek probability of snd best class in reference data
-				  if ( (sndMaxProb_ref < curProb_ref) and (maxProb_ref > curProb_ref) ){
-					  sndMaxProb_ref = curProb_ref;
-				  }
-				  // seek probability of best class in estimation data
-				  if (maxProb_est < curProb_est){
-					  sndMaxProb_est = maxProb_est;
-					  maxProb_est = curProb_est;
-					  bestClass_est = c;
-				  }
-				  // seek probability of snd best class in estimation data
-				  if ( (sndMaxProb_est < curProb_est) and (maxProb_est > curProb_est) ){
-					  sndMaxProb_est = curProb_est;
-				  }
-				  // store absolute difference
-				  e += abs(curProb_ref - curProb_est);
-			  }
-			  
-			  // if no class was defined in reference data, this pixel wont count in accuracy assessment
-			  if (bestClass_ref<0)
-				continue;
-			  
-			  // add absolute difference of current pixel to overall sum
-			  this->errAbs[isTestData] += e/numberOfClasses;
-			  // check if another class as the true class was estimated, and if so, denote it as error
-			  if (bestClass_ref != bestClass_est){
-			  this->errLoss[isTestData]++;
-			  }
-			  // add margin
-			  this->margin[isTestData] += (maxProb_est - sndMaxProb_est);
-
-			  // update 0-1-loss confusion matrix
-			  this->confusionLoss[isTestData].at<float>(bestClass_ref, bestClass_est)++;
-			  // save number class-samples in last column
-			  this->confusionLoss[isTestData].at<float>(bestClass_ref, this->confusionLoss[isTestData].cols-1)++;
-
-			  // update absolute difference confusion matrix
-			  for(int c=0; c<(*ref).size(); c++){
-				  // add certainty to about class c to confusion matrix
-				  this->confusionAbs[isTestData].at<float>(bestClass_ref, c) += (est).at(c).at<float>(y, x);
-				  // save "number" class-samples in last column (its "number" because it will be 1 when summed over all classes)
-				  this->confusionAbs[isTestData].at<float>(bestClass_ref, this->confusionAbs[isTestData].cols-1) += (est).at(c).at<float>(y, x);
-			  }
-			  // denote number of samples in test and train set
-			  count[isTestData]++;
-		  }
-      }
-
-  }
-  // normalize errors
-  this->errAbs[0] /= count[0];
-  this->errLoss[0] /= count[0];
-  this->margin[0] /= count[0];
-  this->errAbs[1] /= count[1];
-  this->errLoss[1] /= count[1];
-  this->margin[1] /= count[1];
-
-}
-
-// estimate individual error of one fold using trival maxPrior-classificator
-void ClassificationError::estimate(list< vector<Mat> >& refData, Mat prior, int fold, int numberOfFolds, bool horizontalFolds){
-
-  // allocate and init confusion matrices
-  double numberOfClasses = refData.front().size();
-  this->confusionAbs[0] = Mat::zeros(numberOfClasses, numberOfClasses+1, CV_32FC1);
-  this->confusionAbs[1] = Mat::zeros(numberOfClasses, numberOfClasses+1, CV_32FC1);
-  this->confusionLoss[0] = Mat::zeros(numberOfClasses, numberOfClasses+1, CV_32FC1);
-  this->confusionLoss[1] = Mat::zeros(numberOfClasses, numberOfClasses+1, CV_32FC1);
-  
-  // some temporary variables
-  Mat tmp;
-  double count[2] = {0, 0};
-  double e, curProb_ref, curProb_est, maxProb_ref, maxProb_est, sndMaxProb_ref, sndMaxProb_est;
-  int bestClass_ref, bestClass_est;
-  
-  // loop through images
-  int i = 0, isTestData;
-  for(list< vector<Mat> >::iterator ref=refData.begin(); ref != refData.end(); ref++, i++){
-   
-      // if there are less folds than images; each fold consists of a subset of images (if not it consists of image parts)
-      if (numberOfFolds <= refData.size()){
-		  // check if current image is part of test- or training set
-		  if ((i % numberOfFolds) == fold)
-			  isTestData = 1;
-		  else
-			  isTestData = 0;
-      }
-      // loop through all pixel
-      for(int y=0; y<(*ref).at(0).rows; y++){
-		  for(int x=0; x<(*ref).at(0).cols; x++){
-
-			  // if there are more folds than images, each fold consists of image parts
-			  if (numberOfFolds > refData.size()){
-				  if (horizontalFolds){
-					  // check if current pixel belongs to test- or trainings data
-					  int width = (*ref).at(0).cols/numberOfFolds;
-					  if ((x >= fold*width) and (x < (fold+1)*width))
-						isTestData = 1;
-					  else
-						isTestData = 0;
-				  }else{
-					  // check if current pixel belongs to test- or trainings data
-					  int height = (*ref).at(0).rows/numberOfFolds;
-					  if ((y >= fold*height) and (y < (fold+1)*height))
-						isTestData = 1;
-					  else
-						isTestData = 0;
-				  }
-			  }
-
-			  e = 0;
-			  maxProb_ref = maxProb_est = sndMaxProb_ref = sndMaxProb_est = -1;
-			  bestClass_ref = bestClass_est = -1;
-			  // loop through classes
-			  // seek maximum class-probability in reference and estimation data
-			  for(int c=0; c<(*ref).size(); c++){
-				  // get probability of this class within the reference data
-				  curProb_ref = (*ref).at(c).at<float>(y, x);
-				  // get probability of this class within the estimation
-				  curProb_est = prior.at<float>(c);
-				  // seek probability of best class in reference data
-				  if (maxProb_ref < curProb_ref){
-					  sndMaxProb_ref = maxProb_ref;
-					  maxProb_ref = curProb_ref;
-					  bestClass_ref = c;
-				  }
-				  // seek probability of snd best class in reference data
-				  if ( (sndMaxProb_ref < curProb_ref) and (maxProb_ref > curProb_ref) ){
-					  sndMaxProb_ref = curProb_ref;
-				  }
-				  // seek probability of best class in estimation data
-				  if (maxProb_est < curProb_est){
-					  sndMaxProb_est = maxProb_est;
-					  maxProb_est = curProb_est;
-					  bestClass_est = c;
-				  }
-				  // seek probability of snd best class in estimation data
-				  if ( (sndMaxProb_est < curProb_est) and (maxProb_est > curProb_est) ){
-					  sndMaxProb_est = curProb_est;
-				  }
-				  // store absolute difference
-				  e += abs(curProb_ref - curProb_est);
-			  }
-			  
-			  // if no class was defined in reference data, this pixel wont count in accuracy assessment
-			  if (bestClass_ref<0)
-				continue;
-			  
-			  // add absolute difference of current pixel to overall sum
-			  this->errAbs[isTestData] += e/numberOfClasses;
-			  // check if another class as the true class was estimated, and if so, denote it as error
-			  if (bestClass_ref != bestClass_est){
-				this->errLoss[isTestData]++;
-			  }
-			  // add margin
-			  this->margin[isTestData] += (maxProb_est - sndMaxProb_est);
-
-			  // update 0-1-loss confusion matrix
-			  this->confusionLoss[isTestData].at<float>(bestClass_ref, bestClass_est)++;
-			  // save number class-samples in last column
-			  this->confusionLoss[isTestData].at<float>(bestClass_ref, this->confusionLoss[isTestData].cols-1)++;
-
-			  // update absolute difference confusion matrix
-			  for(int c=0; c<(*ref).size(); c++){
-				  // add certainty to about class c to confusion matrix
-				  this->confusionAbs[isTestData].at<float>(bestClass_ref, c) += prior.at<float>(c);
-				  // save "number" class-samples in last column (its "number" because it will be 1 when summed over all classes)
-				  this->confusionAbs[isTestData].at<float>(bestClass_ref, this->confusionAbs[isTestData].cols-1) += prior.at<float>(c);
-			  }
-			  // denote number of samples in test and train set
-			  count[isTestData]++;
-		  }
-      }   
-  }
-  // normalize errors
-  this->errAbs[0] /= count[0];
-  this->errLoss[0] /= count[0];
-  this->margin[0] /= count[0];
-  this->errAbs[1] /= count[1];
-  this->errLoss[1] /= count[1];
-  this->margin[1] /= count[1];
-  
-}*/
 
 // print error estimate
 void ClassificationError::print(void){
@@ -513,143 +256,143 @@ void ClassificationError::print(void){
   double n, v;
   Vec2f oa;
   
-  cout << endl << "*** Accuracy Assessment ***" << endl << endl;
-  cout << "*** on training data ***" << endl;
-  cout << " >> Loss:\t" << this->errLoss[0] << "\t+-\t" << this->errLossStd[0] << endl;
-  cout << " >> Error:\t" << this->errAbs[0] << "\t+-\t" << this->errAbsStd[0] << endl;
-  cout << " >> Margin:\t" << this->margin[0] << "\t+-\t" << this->marginStd[0] << endl;
+  fout << endl << "*** Accuracy Assessment ***" << endl << endl;
+  fout << "*** on training data ***" << endl;
+  fout << " >> Loss:\t" << this->errLoss[0] << "\t+-\t" << this->errLossStd[0] << endl;
+  fout << " >> Error:\t" << this->errAbs[0] << "\t+-\t" << this->errAbsStd[0] << endl;
+  fout << " >> Margin:\t" << this->margin[0] << "\t+-\t" << this->marginStd[0] << endl;
   if (CV_MAT_CN(this->confusionLoss[0].type()) == 1){
       oa.val[0] = oa.val[1] = 0;
-      cout << " >> Confusion (Loss):" << endl;
+      fout << " >> Confusion (Loss):" << endl;
       for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
 	  n = this->confusionLoss[0].at<float>(c_ref, this->confusionLoss[0].cols-1);
-	  cout << "\t";
+	  fout << "\t";
 	  for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
 	      if (n>0){
-			cout << setw(10) << left << (this->confusionLoss[0].at<float>(c_ref, c_est)/n) << "\t";
+			fout << setw(10) << left << (this->confusionLoss[0].at<float>(c_ref, c_est)/n) << "\t";
 		  if (c_ref == c_est){
 		      oa.val[0] += this->confusionLoss[0].at<float>(c_ref, c_est)/n;
 		      oa.val[1] += pow( this->confusionLoss[0].at<float>(c_ref, c_est)/n,2);
 		  }
 	      }else
-		  cout << setw(10) << left << 0.0 << "\t";
+		  fout << setw(10) << left << 0.0 << "\t";
 	  }
-	  cout << "( " << n << " )" << endl;
+	  fout << "( " << n << " )" << endl;
       }
-      cout << " >> OA (Loss Training): " << oa.val[0]/this->confusionLoss[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[0].rows)/(this->confusionLoss[0].rows-1)) << endl;
+      fout << " >> OA (Loss Training): " << oa.val[0]/this->confusionLoss[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[0].rows)/(this->confusionLoss[0].rows-1)) << endl;
   }else{
       n = this->confusionLoss[0].at<Vec2f>(0, this->confusionLoss[0].cols-1).val[0];
       oa.val[0] = oa.val[1] = 0;
-      cout << " >> Confusion (Loss) Mean:" << endl;
+      fout << " >> Confusion (Loss) Mean:" << endl;
       for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
 			  Vec2f cur = this->confusionLoss[0].at<Vec2f>(c_ref, c_est);
-			  cout << setw(10) << left << 1./n * cur.val[0] << "\t";
+			  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
 			  if (c_ref == c_est){
 				  oa.val[0] += 1./n * cur.val[0];
 				  oa.val[1] += pow(1./n * cur.val[0],2);
 			  }
 		  }
-		  cout << endl;
+		  fout << endl;
       }
-      cout << " >> Confusion (Loss) StdDev:" << endl;
+      fout << " >> Confusion (Loss) StdDev:" << endl;
       for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
-	  cout << "\t";
+	  fout << "\t";
 	  for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
 		  Vec2f cur = this->confusionLoss[0].at<Vec2f>(c_ref, c_est);
 		  v = 1./(n-1)*(cur.val[1] - 1./n*pow(cur.val[0],2));
 		  if (v>0)
-		      cout << setw(10) << left << sqrt(v) << "\t";
+		      fout << setw(10) << left << sqrt(v) << "\t";
 		  else
-		      cout << setw(10) << left << 0.0 << "\t";
+		      fout << setw(10) << left << 0.0 << "\t";
 	  }
-	  cout << endl;
+	  fout << endl;
       }
-      cout << " >> OA (Loss Training): " << oa.val[0]/this->confusionLoss[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[0].rows)/(this->confusionLoss[0].rows-1)) << endl;
+      fout << " >> OA (Loss Training): " << oa.val[0]/this->confusionLoss[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[0].rows)/(this->confusionLoss[0].rows-1)) << endl;
   }
   if (CV_MAT_CN(this->confusionAbs[0].type()) == 1){
       oa.val[0] = oa.val[1] = 0;
-      cout << " >> Confusion (Error):" << endl;
+      fout << " >> Confusion (Error):" << endl;
       for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
 		  n = this->confusionAbs[0].at<float>(c_ref, this->confusionAbs[0].cols-1);
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
 			  if (n>0){
-				  cout << setw(10) << left << this->confusionAbs[0].at<float>(c_ref, c_est)/n << "\t";
+				  fout << setw(10) << left << this->confusionAbs[0].at<float>(c_ref, c_est)/n << "\t";
 				  if (c_ref == c_est){
 					  oa.val[0] += this->confusionAbs[0].at<float>(c_ref, c_est)/n;
 					  oa.val[1] += pow(this->confusionAbs[0].at<float>(c_ref, c_est)/n,2);
 				  }
 			  }else
-					cout << setw(10) << left << 0.0 << "\t";
+					fout << setw(10) << left << 0.0 << "\t";
 		  }
-		  cout << "( " << n << " )" << endl;
+		  fout << "( " << n << " )" << endl;
       }
-      cout << " >> OA (Error Training): " << oa.val[0]/this->confusionAbs[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[0].rows)/(this->confusionAbs[0].rows-1)) << endl;
+      fout << " >> OA (Error Training): " << oa.val[0]/this->confusionAbs[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[0].rows)/(this->confusionAbs[0].rows-1)) << endl;
   }else{
       n = this->confusionAbs[0].at<Vec2f>(0, this->confusionAbs[0].cols-1).val[0];
       oa.val[0] = oa.val[1] = 0;
-      cout << " >> Confusion (Error) Mean:" << endl;
+      fout << " >> Confusion (Error) Mean:" << endl;
       for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
-		cout << "\t";
+		fout << "\t";
 		for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
 		  Vec2f cur = this->confusionAbs[0].at<Vec2f>(c_ref, c_est);
-		  cout << setw(10) << left << 1./n * cur.val[0] << "\t";
+		  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
 		  if (c_ref == c_est){
 		      oa.val[0] += 1./n * cur.val[0];
 		      oa.val[1] += pow(1./n * cur.val[0],2);
 		  }
 		}
-	  cout << endl;
+	  fout << endl;
       }
-      cout << " >> Confusion (Error) StdDev:" << endl;
+      fout << " >> Confusion (Error) StdDev:" << endl;
       for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
 			  Vec2f cur = this->confusionAbs[0].at<Vec2f>(c_ref, c_est);
 			  v = 1./(n-1)*(cur.val[1] - 1./n*pow(cur.val[0],2));
 			  if (v>0)
-				  cout << setw(10) << left << sqrt(v) << "\t";
+				  fout << setw(10) << left << sqrt(v) << "\t";
 			  else
-				  cout << setw(10) << left << 0.0 << "\t";
+				  fout << setw(10) << left << 0.0 << "\t";
 		  }
-		  cout << endl;
+		  fout << endl;
       }
-      cout << " >> OA (Error Training): " << oa.val[0]/this->confusionAbs[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[0].rows)/(this->confusionAbs[0].rows-1)) << endl;
+      fout << " >> OA (Error Training): " << oa.val[0]/this->confusionAbs[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[0].rows)/(this->confusionAbs[0].rows-1)) << endl;
   }
-  cout << "True Positives TP" << endl;
-  cout << "False Negatives FN" << endl;
-  cout << "False Positives FP" << endl;
-  cout << "True Negatives TN" << endl;
-  cout << "Test outcome Positive TPos" << endl;
-  cout << "Test outcome Negative TNeg" << endl;
-  cout << "Test outcome Correct TCor" << endl;
-  cout << "Test outcome Wrong TWro" << endl;
-  cout << "Positive Predictive Value, precision PPV" << endl;
-  cout << "False Discovery Rate FDR" << endl;
-  cout << "False Ommision Rate FOR" << endl;
-  cout << "Negative Predictive Value NPV" << endl;
-  cout << "True Positive Rate, sensitivity, recall TPR" << endl;
-  cout << "False Positive Rate, fall-out FPR" << endl;
-  cout << "False Negative Rate FNR" << endl;
-  cout << "True Negative Rate, specificity TNR" << endl;
-  cout << "Positive Likelihood Ratio LR+" << endl;
-  cout << "Negative Likelihood Ratio LR-" << endl;
-  cout << "F-measure (beta=0.5) F0.5" << endl;
-  cout << "F-measure (beta=1) F1" << endl;
-  cout << "F-measure (beta=2) F2" << endl;
-  cout << "G-measure G" << endl;
-  cout << "Information Content IC" << endl;
-  cout << "(Overall) Accuracy AC" << endl;
-  cout << "Balanced Accuracy" << endl;
-  cout << "Expected Accuracy" << endl;
-  cout << "Matthews correlations coefficient MCC" << endl;
-  cout << "Informedness I" << endl;
-  cout << "Markedness M" << endl;
-  cout << "kappa k" << endl;
-  cout << "Diagnostics Odds Ratio DOR" << endl;
-  cout << endl << endl;
+  fout << "True Positives TP" << endl;
+  fout << "False Negatives FN" << endl;
+  fout << "False Positives FP" << endl;
+  fout << "True Negatives TN" << endl;
+  fout << "Test outcome Positive TPos" << endl;
+  fout << "Test outcome Negative TNeg" << endl;
+  fout << "Test outcome Correct TCor" << endl;
+  fout << "Test outcome Wrong TWro" << endl;
+  fout << "Positive Predictive Value, precision PPV" << endl;
+  fout << "False Discovery Rate FDR" << endl;
+  fout << "False Ommision Rate FOR" << endl;
+  fout << "Negative Predictive Value NPV" << endl;
+  fout << "True Positive Rate, sensitivity, recall TPR" << endl;
+  fout << "False Positive Rate, fall-out FPR" << endl;
+  fout << "False Negative Rate FNR" << endl;
+  fout << "True Negative Rate, specificity TNR" << endl;
+  fout << "Positive Likelihood Ratio LR+" << endl;
+  fout << "Negative Likelihood Ratio LR-" << endl;
+  fout << "F-measure (beta=0.5) F0.5" << endl;
+  fout << "F-measure (beta=1) F1" << endl;
+  fout << "F-measure (beta=2) F2" << endl;
+  fout << "G-measure G" << endl;
+  fout << "Information Content IC" << endl;
+  fout << "(Overall) Accuracy AC" << endl;
+  fout << "Balanced Accuracy" << endl;
+  fout << "Expected Accuracy" << endl;
+  fout << "Matthews correlations coefficient MCC" << endl;
+  fout << "Informedness I" << endl;
+  fout << "Markedness M" << endl;
+  fout << "kappa k" << endl;
+  fout << "Diagnostics Odds Ratio DOR" << endl;
+  fout << endl << endl;
   
   // TP FN FP TN
   for(int c=0; c < this->confusionAbs[1].rows; c++){
@@ -657,11 +400,11 @@ void ClassificationError::print(void){
 	  double Neg = this->stats[0].at(c).at<float>(0,2) + this->stats[0].at(c).at<float>(0,3);
 	  double N = Pos + Neg;
 	  double Prev = Pos/N;
-	  cout << endl << "Statistics for class " << c << endl;
-	  cout << "Total Population N:\t" << N << endl;
-	  cout << "Condition Positive Pos:\t" << Pos << endl;
-	  cout << "Condition Negative Neg:\t" << Neg << endl;
-	  cout << "Prevalence Prev:\t" << Prev << endl;
+	  fout << endl << "Statistics for class " << c << endl;
+	  fout << "Total Population N:\t" << N << endl;
+	  fout << "Condition Positive Pos:\t" << Pos << endl;
+	  fout << "Condition Negative Neg:\t" << Neg << endl;
+	  fout << "Prevalence Prev:\t" << Prev << endl;
 	  
 	  Mat statistics(31, 11, CV_32FC1);
 	  double AUC = 0;
@@ -734,147 +477,147 @@ void ClassificationError::print(void){
 		  statistics.at<float>(30, t) = DOR;
 		  AUC += TPR*0.1;
 	  }
-	  cout << statistics << endl;
-	  cout << "Area Under the Curve AUC:\t" << AUC << endl;
-	  cout << "Discrimination D:\t" << (AUC-0.5) << endl;
+	  fout << statistics << endl;
+	  fout << "Area Under the Curve AUC:\t" << AUC << endl;
+	  fout << "Discrimination D:\t" << (AUC-0.5) << endl;
   }
   
-  cout << endl << "*** on test data ***" << endl;
-  cout << " >> Loss:\t" << this->errLoss[1] << "\t+-\t" << this->errLossStd[1] << endl;
-  cout << " >> Error:\t" << this->errAbs[1] << "\t+-\t" << this->errAbsStd[1] << endl;
-  cout << " >> Margin:\t" << this->margin[1] << "\t+-\t" << this->marginStd[1] << endl;
+  fout << endl << "*** on test data ***" << endl;
+  fout << " >> Loss:\t" << this->errLoss[1] << "\t+-\t" << this->errLossStd[1] << endl;
+  fout << " >> Error:\t" << this->errAbs[1] << "\t+-\t" << this->errAbsStd[1] << endl;
+  fout << " >> Margin:\t" << this->margin[1] << "\t+-\t" << this->marginStd[1] << endl;
   if (CV_MAT_CN(this->confusionLoss[1].type()) == 1){
       oa.val[0] = oa.val[1] = 0;
-      cout << " >> Confusion (Loss):" << endl;
+      fout << " >> Confusion (Loss):" << endl;
       for(int c_ref=0; c_ref<this->confusionLoss[1].rows; c_ref++){
 		  n = this->confusionLoss[1].at<float>(c_ref, this->confusionLoss[1].cols-1);
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionLoss[1].cols-1; c_est++){
 			  if (n>0){
-				  cout << setw(10) << left << this->confusionLoss[1].at<float>(c_ref, c_est)/n << "\t";
+				  fout << setw(10) << left << this->confusionLoss[1].at<float>(c_ref, c_est)/n << "\t";
 				  if (c_ref == c_est){
 					  oa.val[0] += this->confusionLoss[1].at<float>(c_ref, c_est)/n;
 					  oa.val[1] += pow(this->confusionLoss[1].at<float>(c_ref, c_est)/n,2);
 				  }
 			  }else	
-				  cout << setw(10) << left << 0.0 << "\t";
+				  fout << setw(10) << left << 0.0 << "\t";
 		  }
-		  cout << "( " << n << " )" << endl;
+		  fout << "( " << n << " )" << endl;
       }
-      cout << " >> OA (Loss Test): " << oa.val[0]/this->confusionLoss[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[1].rows)/(this->confusionLoss[1].rows-1)) << endl;
+      fout << " >> OA (Loss Test): " << oa.val[0]/this->confusionLoss[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[1].rows)/(this->confusionLoss[1].rows-1)) << endl;
   }else{
       n = this->confusionLoss[1].at<Vec2f>(0, this->confusionLoss[1].cols-1).val[0];
       oa.val[0] = oa.val[1] = 0;
-      cout << " >> Confusion (Loss) Mean:" << endl;
+      fout << " >> Confusion (Loss) Mean:" << endl;
       for(int c_ref=0; c_ref<this->confusionLoss[1].rows; c_ref++){
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionLoss[1].cols-1; c_est++){
 			  Vec2f cur = this->confusionLoss[1].at<Vec2f>(c_ref, c_est);
-			  cout << setw(10) << left << 1./n * cur.val[0] << "\t";
+			  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
 			  if (c_ref == c_est){
 				  oa.val[0] += 1./n * cur.val[0];
 				  oa.val[1] += pow(1./n * cur.val[0],2);
 			  }
 		  }
-		  cout << endl;
+		  fout << endl;
       }
-      cout << " >> Confusion (Loss) StdDev:" << endl;
+      fout << " >> Confusion (Loss) StdDev:" << endl;
       for(int c_ref=0; c_ref<this->confusionLoss[1].rows; c_ref++){
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionLoss[1].cols-1; c_est++){
 			  Vec2f cur = this->confusionLoss[1].at<Vec2f>(c_ref, c_est);
 			  v = 1./(n-1)*(cur.val[1] - 1./n*pow(cur.val[0],2));
 			  if (v>0)
-				  cout << setw(10) << left << sqrt(v) << "\t";
+				  fout << setw(10) << left << sqrt(v) << "\t";
 			  else
-				  cout << setw(10) << left << 0.0 << "\t";
+				  fout << setw(10) << left << 0.0 << "\t";
 		  }
-		  cout << endl;
+		  fout << endl;
       }  
-      cout << " >> OA (Loss Test): " << oa.val[0]/this->confusionLoss[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[1].rows)/(this->confusionLoss[1].rows-1)) << endl;
+      fout << " >> OA (Loss Test): " << oa.val[0]/this->confusionLoss[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[1].rows)/(this->confusionLoss[1].rows-1)) << endl;
   }
   if (CV_MAT_CN(this->confusionAbs[1].type()) == 1){
       oa.val[0] = oa.val[1] = 0;
-      cout << " >> Confusion (Error):" << endl;
+      fout << " >> Confusion (Error):" << endl;
       for(int c_ref=0; c_ref<this->confusionAbs[1].rows; c_ref++){
 		  n = this->confusionAbs[1].at<float>(c_ref, this->confusionAbs[1].cols-1);
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionAbs[1].cols-1; c_est++){
 			  if (n>0){
-				cout << setw(10) << left << this->confusionAbs[1].at<float>(c_ref, c_est)/n << "\t";
+				fout << setw(10) << left << this->confusionAbs[1].at<float>(c_ref, c_est)/n << "\t";
 			  if (c_ref == c_est){
 				  oa.val[0] += this->confusionAbs[1].at<float>(c_ref, c_est)/n;
 				  oa.val[1] += pow(this->confusionAbs[1].at<float>(c_ref, c_est)/n,2);
 			  }
 			  }else
-				  cout << setw(10) << left << 0.0 << "\t";
+				  fout << setw(10) << left << 0.0 << "\t";
 		  }
-		  cout << "( " << n << " )" << endl;
+		  fout << "( " << n << " )" << endl;
       }
-      cout << " >> OA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
+      fout << " >> OA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
   }else{
       n = this->confusionAbs[1].at<Vec2f>(0, this->confusionAbs[1].cols-1).val[0];
       oa.val[0] = oa.val[1] = 0;
-      cout << " >> Confusion (Error) Mean:" << endl;
+      fout << " >> Confusion (Error) Mean:" << endl;
       for(int c_ref=0; c_ref<this->confusionAbs[1].rows; c_ref++){
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionAbs[1].cols-1; c_est++){
 			  Vec2f cur = this->confusionAbs[1].at<Vec2f>(c_ref, c_est);
-			  cout << setw(10) << left << 1./n * cur.val[0] << "\t";
+			  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
 			  if (c_ref == c_est){
 				  oa.val[0] += 1./n * cur.val[0];
 				  oa.val[1] += pow(1./n * cur.val[0],2);
 			  }
 		  }
-		  cout << endl;
+		  fout << endl;
       }
-      cout << " >> Confusion (Error) StdDev:" << endl;
+      fout << " >> Confusion (Error) StdDev:" << endl;
       for(int c_ref=0; c_ref<this->confusionAbs[1].rows; c_ref++){
-		  cout << "\t";
+		  fout << "\t";
 		  for(int c_est=0; c_est<this->confusionAbs[1].cols-1; c_est++){
 			  Vec2f cur = this->confusionAbs[1].at<Vec2f>(c_ref, c_est);
 			  v = 1./(n-1)*(cur.val[1] - 1./n*pow(cur.val[0],2));
 			  if (v>0)
-				  cout << setw(10) << left << sqrt(v) << "\t";
+				  fout << setw(10) << left << sqrt(v) << "\t";
 			  else
-				  cout << setw(10) << left << 0.0 << "\t";
+				  fout << setw(10) << left << 0.0 << "\t";
 		  }
-		  cout << endl;
+		  fout << endl;
       }
-      cout << " >> OA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
+      fout << " >> OA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
   }
-  cout << "True Positives TP" << endl;
-  cout << "False Negatives FN" << endl;
-  cout << "False Positives FP" << endl;
-  cout << "True Negatives TN" << endl;
-  cout << "Test outcome Positive TPos" << endl;
-  cout << "Test outcome Negative TNeg" << endl;
-  cout << "Test outcome Correct TCor" << endl;
-  cout << "Test outcome Wrong TWro" << endl;
-  cout << "Positive Predictive Value, precision PPV" << endl;
-  cout << "False Discovery Rate FDR" << endl;
-  cout << "False Ommision Rate FOR" << endl;
-  cout << "Negative Predictive Value NPV" << endl;
-  cout << "True Positive Rate, sensitivity, recall TPR" << endl;
-  cout << "False Positive Rate, fall-out FPR" << endl;
-  cout << "False Negative Rate FNR" << endl;
-  cout << "True Negative Rate, specificity TNR" << endl;
-  cout << "Positive Likelihood Ratio LR+" << endl;
-  cout << "Negative Likelihood Ratio LR-" << endl;
-  cout << "F-measure (beta=0.5) F0.5" << endl;
-  cout << "F-measure (beta=1) F1" << endl;
-  cout << "F-measure (beta=2) F2" << endl;
-  cout << "G-measure G" << endl;
-  cout << "Information Content IC" << endl;
-  cout << "(Overall) Accuracy AC" << endl;
-  cout << "Balanced Accuracy" << endl;
-  cout << "Expected Accuracy" << endl;
-  cout << "Matthews correlations coefficient MCC" << endl;
-  cout << "Informedness I" << endl;
-  cout << "Markedness M" << endl;
-  cout << "kappa k" << endl;
-  cout << "Diagnostics Odds Ratio DOR" << endl;
-  cout << endl << endl;
+  fout << "True Positives TP" << endl;
+  fout << "False Negatives FN" << endl;
+  fout << "False Positives FP" << endl;
+  fout << "True Negatives TN" << endl;
+  fout << "Test outcome Positive TPos" << endl;
+  fout << "Test outcome Negative TNeg" << endl;
+  fout << "Test outcome Correct TCor" << endl;
+  fout << "Test outcome Wrong TWro" << endl;
+  fout << "Positive Predictive Value, precision PPV" << endl;
+  fout << "False Discovery Rate FDR" << endl;
+  fout << "False Ommision Rate FOR" << endl;
+  fout << "Negative Predictive Value NPV" << endl;
+  fout << "True Positive Rate, sensitivity, recall TPR" << endl;
+  fout << "False Positive Rate, fall-out FPR" << endl;
+  fout << "False Negative Rate FNR" << endl;
+  fout << "True Negative Rate, specificity TNR" << endl;
+  fout << "Positive Likelihood Ratio LR+" << endl;
+  fout << "Negative Likelihood Ratio LR-" << endl;
+  fout << "F-measure (beta=0.5) F0.5" << endl;
+  fout << "F-measure (beta=1) F1" << endl;
+  fout << "F-measure (beta=2) F2" << endl;
+  fout << "G-measure G" << endl;
+  fout << "Information Content IC" << endl;
+  fout << "(Overall) Accuracy AC" << endl;
+  fout << "Balanced Accuracy" << endl;
+  fout << "Expected Accuracy" << endl;
+  fout << "Matthews correlations coefficient MCC" << endl;
+  fout << "Informedness I" << endl;
+  fout << "Markedness M" << endl;
+  fout << "kappa k" << endl;
+  fout << "Diagnostics Odds Ratio DOR" << endl;
+  fout << endl << endl;
   
   // TP FN FP TN
   for(int c=0; c < this->confusionAbs[1].rows; c++){
@@ -882,11 +625,11 @@ void ClassificationError::print(void){
 	  double Neg = this->stats[1].at(c).at<float>(0,2) + this->stats[1].at(c).at<float>(0,3);
 	  double N = Pos + Neg;
 	  double Prev = Pos/N;
-	  cout << endl << "Statistics for class " << c << endl;
-	  cout << "Total Population N:\t" << N << endl;
-	  cout << "Condition Positive Pos:\t" << Pos << endl;
-	  cout << "Condition Negative Neg:\t" << Neg << endl;
-	  cout << "Prevalence Prev:\t" << Prev << endl;
+	  fout << endl << "Statistics for class " << c << endl;
+	  fout << "Total Population N:\t" << N << endl;
+	  fout << "Condition Positive Pos:\t" << Pos << endl;
+	  fout << "Condition Negative Neg:\t" << Neg << endl;
+	  fout << "Prevalence Prev:\t" << Prev << endl;
 	  
 	  Mat statistics(31, 11, CV_32FC1);
 	  double AUC = 0;
@@ -959,9 +702,9 @@ void ClassificationError::print(void){
 		  statistics.at<float>(30, t) = DOR;
 		  AUC += TPR*0.1;
 	  }
-	  cout << statistics << endl;
-	  cout << "Area Under the Curve AUC:\t" << AUC << endl;
-	  cout << "Discrimination D:\t" << (AUC-0.5) << endl;
+	  fout << statistics << endl;
+	  fout << "Area Under the Curve AUC:\t" << AUC << endl;
+	  fout << "Discrimination D:\t" << (AUC-0.5) << endl;
   }
 }
 
