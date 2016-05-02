@@ -113,6 +113,7 @@ private:
 
 	//! testing patch-based textons
 	vector<Mat> histMatching(Mat textonMap, vector<Mat> histDB, int fold);
+	vector<Mat> histMatchingI(Mat textonMap, vector<Mat> histDB, int fold);
 
 	//! measurement of wishart distance
 	float wishartDistance(Mat center, Mat comp);
@@ -145,7 +146,7 @@ private:
 	vector<int> nPatches;
 
 	//! histogram of training
-	vector<Mat> histDB[5];
+	vector<Mat> globalhistDB[5];
 
 	/*
 	* fVectors includes feature vectors(vector<Mat> fVec)

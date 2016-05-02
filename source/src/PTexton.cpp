@@ -315,20 +315,21 @@ void PTexton::train(){
 				
 
 		//// texton mapping ////
-		for (int j = 0; j < nfolds; j++){
+		for (int trainfold = 0; trainfold < nfolds; trainfold++){
 			//if (fold != j){	including test image(fold==j)
 				//feature extraction				
-				this->generateFVectors(this->foldRect.at(fold));
+			this->generateFVectors(this->foldRect.at(trainfold));
 
 				//texton mapping
 				Mat textonMap;
 				//for (int j = 0; j < this->nfolds; j++){
 				textonMap = textonMapping(fVectors, textonDB);	//fVectors, textons Dictionary
-				imwrite("testfold"+to_string(fold)+"trainfold"+to_string(j)+ "textonMap.png", textonMap);
-				showImg(textonMap.clone(), "testfold" + to_string(fold) + "trainfold" + to_string(j) + "textonMap_color.png", false, true);
+				imwrite("testfold" + to_string(fold) + "trainfold" + to_string(trainfold) + "textonMap.png", textonMap);
+				showImg(textonMap.clone(), "testfold" + to_string(fold) + "trainfold" + to_string(trainfold) + "textonMap_color.png", false, true);
 
 				//vector free
 				vector<vector<Mat>>().swap(fVectors);
+				fVectors.clear();
 			//}
 		}
 
@@ -350,9 +351,10 @@ void PTexton::train(){
 						thistDB.at(k) = newHist.clone();
 					}
 				}
+
 			}
 		}
-		this->histDB[fold] = thistDB;
+		this->globalhistDB[fold] = thistDB;
 	}
 
 	/*for (int i = 0; i < this->nfolds; i++){
@@ -471,7 +473,96 @@ vector<Mat> PTexton::histMatching(Mat textonMap, vector<Mat> histDBi, int fold){
 	
 	return classoutput;
 }
+//! testing patch-based textons (individual point)
+vector<Mat> PTexton::histMatchingI(Mat textonMap, vector<Mat> histDBi, int fold){
+	cout << "test start" << endl;
+	ofile << "test start" << endl;
 
+	Mat trainData;
+	//Random Projection
+	if (this->RP == "yes"){
+		Mat oneDB;
+		vconcat(histDBi, oneDB);
+
+		vector<Mat> reduced;	//reduced
+		for (int i = 0; i < oneDB.rows; i++){
+			Mat r = oneDB.row(i);
+			transpose(r, r);
+			reduced.push_back(RandomProjection(r));
+		}
+		vconcat(reduced, trainData);
+	}
+	else{
+		vconcat(histDBi, trainData);
+	}
+	//K-nn training
+	trainData.convertTo(trainData, CV_32F);
+	Mat trainClass(trainData.rows, 1, CV_32SC1);
+
+	int n = 0;
+	for (int i = 0; i < histDBi.size(); i++){
+		for (int j = 0; j < histDBi.at(i).rows; j++){
+			trainClass.at<int>(n) = i;
+			n++;
+		}
+	}
+	cout << "Knn train success" << endl;
+	ofile << "Knn train success" << endl;
+
+	int minus = 0;
+	cv::KNearest *knn = new KNearest(trainData, trainClass);
+
+	vector<Mat> classoutput;
+	for (int i = 0; i < nclass; i++){
+		classoutput.push_back(Mat::zeros(textonMap.rows - minus - (pSize - 1), textonMap.cols - (pSize - 1), CV_8U));
+	}
+
+	//trace test map
+	n = 0;
+	for (int i = half_patch; i < textonMap.rows - minus - half_patch; i++){
+		for (int j = half_patch; j < textonMap.cols - half_patch; j++, n++){
+
+			//patch extraction in textonMap
+			cv::Rect patchR(j - half_patch, i - half_patch, pSize, pSize);
+
+			Mat patch = textonMap(patchR).clone();
+			patch.convertTo(patch, CV_32F);
+
+			//calculation of histogram in each patch
+			int histSize = histDBi.at(0).cols;
+			float range[] = { 0, histSize };
+			const float* histRange = { range };
+			bool uniform = true; bool accumulate = false;
+			//cout << "patch size=" << patch.size() << endl;
+			//cout << patch << endl;
+
+			Mat hist;
+			calcHist(&patch, 1, 0, Mat(), hist, 1, &histSize, &histRange, uniform, accumulate);
+			//cout << "hist size=" << hist.size() << endl;
+			//cout << hist << endl;
+
+			if (this->RP == "yes"){
+				hist = RandomProjection(hist);
+			}
+			else{
+				transpose(hist, hist);
+				hist.convertTo(hist, CV_32F);
+			}
+			//find nearest neighbor
+			int knn_k = this->knn;
+			float response = knn->find_nearest(hist, knn_k);// , results, nearests);
+			classoutput.at((int)response).at<uchar>(i - half_patch, j - half_patch) = 255;
+
+		}
+		if (i % 100 == 0)
+			cout << "i=" << i << endl;
+	}	
+
+	cout << "test end" << endl;
+	ofile << "test end" << endl;
+
+	return classoutput;
+}
 //! calculate histogram
 vector<Mat> PTexton::learnHist(Mat textonMap, int fold){
 	cout << "calculateHist start" << endl;
@@ -660,12 +751,39 @@ void PTexton::foldGeneration(){
 
 void PTexton::test(){
 
+	//// learning histogram ////
+	if (globalhistDB[0].size() == 0){
+		for (int fold = 0; fold < nfolds; fold++){
+			vector<Mat> thistDB;
+			for (int j = 0; j < nfolds; j++){
+				if (fold != j){
+					Mat textonMap = imread("testfold" + to_string(fold) + "trainfold" + to_string(j) + "textonMap.png", 0);
+
+					vector<Mat> tempHistDB = learnHist(textonMap.clone(), j);
+
+					if (thistDB.size() == 0){
+						thistDB = tempHistDB;
+					}
+					else{
+						for (int k = 0; k < nclass; k++){
+							Mat newHist;
+							vconcat(thistDB.at(k), tempHistDB.at(k), newHist);
+							thistDB.at(k) = newHist.clone();
+						}
+					}
+
+				}
+			}
+			this->globalhistDB[fold] = thistDB;
+		}
+	}
+
 	vector<Mat> output;
 
 	for (int fold = 0; fold < nfolds; fold++){
 
 		Mat test_map = imread("testfold" + to_string(fold) + "trainfold" + to_string(fold) + "textonMap.png", 0);
-		vector<Mat> output = histMatching(test_map, histDB[fold], fold);
+		vector<Mat> output = histMatching(test_map, globalhistDB[fold], fold);
 		for (int c = 0; c < nclass; c++){
 			imwrite("test" + to_string(fold)+"fold_class"+to_string(c) + "output.png", output.at(c));
 		}		
@@ -1205,7 +1323,7 @@ void PTexton::clusterTextons(int fold, int sampling){
 
 		bool one = false;
 		for (int i = 0; i < K; i++){
-			if (nlabel.at <int>(i) == 1){
+			if (nlabel.at <int>(i) < 3){
 				one = true; break;
 			}
 		}

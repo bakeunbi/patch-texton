@@ -31,6 +31,8 @@ int main(int argc, char** argv){
 		pSize = atoi(argv[3]);
 	}
 	else if (argc < 6){
+		K = atoi(argv[2]);
+		pSize = atoi(argv[3]);
 		 knn = atoi(argv[4]);
 	}
 
@@ -38,6 +40,8 @@ int main(int argc, char** argv){
 	PTexton pTexton(fname,pSize,K,knn);	//file name, patch size, K,RP
 	
 	pTexton.evaluate();
+	//pTexton.test();
+	//pTexton.errorAssessment();
 	return 0;
 }
 
