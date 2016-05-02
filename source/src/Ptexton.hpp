@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <thread>
 #include <opencv2/opencv.hpp>
 //#include <opencv2/highgui/highgui.hpp>
 //#include <opencv2/core/core.hpp>
@@ -33,7 +34,8 @@ using namespace cv;
 class PTexton{
 public:
 	//! the constructor
-	PTexton(string fname, int patchSize, int K, int knn);
+	PTexton(){};
+	void initialize(string fname, int patchSize, int K, int knn);
 
 	//! the destructor
 	~PTexton(void);
@@ -97,16 +99,15 @@ public:
 	string RP;
 
 	int nclass;
+
 private:
+	//! clustering textons using train image
+	void clusterTextons(vector<vector<Mat>> fVectors, int fold);
+
 
 	//! extract feature vectors
-	void generateFVectors(cv::Rect region);
-
-	//! clustering textons using train image
-	void clusterTextons(int fold);
-
-	//! clustering textons using train image
-	void clusterTextons(int fold, int sampling);
+	vector<vector<Mat>> generateFVectors(cv::Rect region);
+	vector<vector<Mat>> generateFVectors(cv::Rect region,int c);
 
 	//! clustering textons using train image by pre-calculation
 	void initializeCenters(int sampling);
@@ -122,7 +123,7 @@ private:
 	float wishartDistance(float firstTerm, Mat invCenter, Mat comp);
 
 	//! map textons to each pixel
-	Mat textonMapping(vector<vector<Mat>> tfvectors, vector<vector<Mat>> testonDic);
+	void textonMapping(vector<vector<Mat>> tfvectors, vector<vector<Mat>> testonDic,int fold, int trainfold);
 	
 	//! generate random matrix for random projection
 	void generateRandomMat(Mat& randomMat, int highD, int lowD, string rMode);
@@ -154,7 +155,7 @@ private:
 	*		1x3 RGB channel in a pixel if image type is color
 	*		1x1 intensity of a pixel if image type is grayscale
 	*/
-	vector<vector<Mat>> fVectors;
+	//vector<vector<Mat>> fVectors;
 
 	//! centers from K-means (K textons)
 	vector<vector<Mat>> textons[5];
@@ -165,5 +166,7 @@ private:
 	//! file outstream
 	ofstream ofile;
 
+	thread textonT[5];
+	thread mapT[5];
 };
 #endif /* PTEXTON_HPP*/
