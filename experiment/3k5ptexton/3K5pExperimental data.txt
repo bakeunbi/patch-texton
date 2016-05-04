@@ -1,0 +1,220 @@
+file name:oph_lexi_cov_reflee.rat
+loadImageData successfully
+There are 5 folds
+0th fold=[135 x 3300 from (10, 10)]
+1th fold=[135 x 3300 from (145, 10)]
+2th fold=[135 x 3300 from (280, 10)]
+3th fold=[135 x 3300 from (415, 10)]
+4th fold=[135 x 3300 from (550, 10)]
+load reference Dataload image:reference\city_inter.png
+load image:reference\field_inter.png
+load image:reference\forest_inter.png
+load image:reference\grassland_inter.png
+load image:reference\street_inter.png
+There are 5 classes
+generateFVectors()
+0class fVectors size:6299
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 6299
+1class fVectors size:191270
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 191270
+2class fVectors size:82848
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 82848
+3class fVectors size:10430
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 10430
+4class fVectors size:9819
+kmeans clustering / K=3
+original feature vectors size= 9819
+generateFVectors()
+0class fVectors size:4666
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 4666
+1class fVectors size:171670
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 171670
+2class fVectors size:100002
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 100002
+3class fVectors size:23588
+kmeans clustering / K=3
+original feature vectors size= 23588
+generateFVectors()
+4class fVectors size:17824
+kmeans clustering / K=3
+original feature vectors size= 17824
+generateFVectors()
+0class fVectors size:8212
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 8212
+1class fVectors size:156101
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 156101
+2class fVectors size:59497
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 59497
+3class fVectors size:42879
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 42879
+4class fVectors size:25362
+kmeans clustering / K=3
+original feature vectors size= 25362
+generateFVectors()
+0class fVectors size:34941
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 34941
+1class fVectors size:160278
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 160278
+2class fVectors size:54187
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 54187
+3class fVectors size:15962
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 15962
+4class fVectors size:24601
+kmeans clustering / K=3
+original feature vectors size= 24601
+generateFVectors()
+0class fVectors size:128137
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 128137
+1class fVectors size:122297
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 122297
+2class fVectors size:89780
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 89780
+3class fVectors size:9021
+generateFVectors()
+kmeans clustering / K=3
+original feature vectors size= 9021
+4class fVectors size:10097
+kmeans clustering / K=3
+original feature vectors size= 10097
+train stage
+texton size=60
+generateFVectors()
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+textonMapping
+center size=60
+texton size=60
+generateFVectors()
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+textonMapping
+center size=60
+generateFVectors()
+current fVectors size:445500
+textonMapping
+center size=60
+texton size=60
+generateFVectors()
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+textonMapping
+center size=60
+texton size=60
+generateFVectors()
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+textonMapping
+center size=60
+texton size=60
+generateFVectors()
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+generateFVectors()
+textonMapping
+center size=60
+current fVectors size:445500
+textonMapping
+center size=60

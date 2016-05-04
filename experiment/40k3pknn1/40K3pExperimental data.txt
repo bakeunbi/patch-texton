@@ -1,0 +1,960 @@
+file name:oph_lexi_cov_reflee.rat
+loadImageData successfully
+There are 5 folds
+0th fold=[138 x 3318 from (1, 1)]
+1th fold=[138 x 3318 from (139, 1)]
+2th fold=[138 x 3318 from (277, 1)]
+3th fold=[138 x 3318 from (415, 1)]
+4th fold=[138 x 3318 from (553, 1)]
+load reference Dataload image:reference\city_inter.png
+load image:reference\field_inter.png
+load image:reference\forest_inter.png
+load image:reference\grassland_inter.png
+load image:reference\street_inter.png
+There are 5 classes
+generateFVectors()
+current fVectors size:457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+nlabel=[587;
+  689;
+  6;
+  26478;
+  758;
+  46;
+  138;
+  30;
+  1263;
+  5]
+nlabel=[1261;
+  2723;
+  6;
+  13376;
+  1742;
+  227;
+  423;
+  197;
+  10042;
+  3]
+nlabel=[2044;
+  2997;
+  6;
+  8688;
+  1524;
+  398;
+  640;
+  359;
+  13341;
+  3]
+nlabel=[35671;
+  31927;
+  29;
+  213216;
+  24138;
+  3885;
+  13245;
+  11946;
+  123826;
+  1]
+nlabel=[42784;
+  39608;
+  1525;
+  195830;
+  27425;
+  8009;
+  9979;
+  10630;
+  122093;
+  1]
+nlabel=[53955;
+  45335;
+  3681;
+  186776;
+  27563;
+  12773;
+  10186;
+  8223;
+  109391;
+  1]
+nlabel=[63639;
+  50115;
+  4454;
+  178339;
+  28105;
+  16013;
+  11073;
+  8453;
+  97692;
+  1]
+nlabel=[70430;
+  54764;
+  4955;
+  169249;
+  29258;
+  18612;
+  11911;
+  9442;
+  89262;
+  1]
+nlabel=[74098;
+  59289;
+  5458;
+  159450;
+  30509;
+  21018;
+  12764;
+  10709;
+  84588;
+  1]
+nlabel=[74900;
+  63243;
+  6041;
+  149463;
+  31744;
+  23507;
+  13651;
+  12150;
+  83184;
+  1]
+nlabel=[73664;
+  66118;
+  6695;
+  139894;
+  32886;
+  26101;
+  14636;
+  13683;
+  84206;
+  1]
+nlabel=[71573;
+  67495;
+  7374;
+  131203;
+  33851;
+  28662;
+  15892;
+  15362;
+  86471;
+  1]
+nlabel=[69081;
+  67230;
+  8083;
+  123416;
+  34676;
+  31739;
+  17356;
+  16982;
+  89320;
+  1]
+generateFVectors()
+current fVectors size:457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+nlabel=[7;
+  11165;
+  2;
+  15800;
+  6;
+  124;
+  1;
+  2;
+  2668;
+  225]
+nlabel=[28;
+  689;
+  648;
+  49;
+  164;
+  13;
+  24943;
+  190;
+  45;
+  3231]
+nlabel=[284;
+  1885;
+  691;
+  229;
+  1032;
+  40;
+  21984;
+  1475;
+  519;
+  1861]
+nlabel=[423;
+  2285;
+  672;
+  400;
+  1224;
+  247;
+  18504;
+  3563;
+  601;
+  2081]
+nlabel=[3434;
+  45878;
+  17676;
+  6616;
+  8560;
+  12644;
+  100346;
+  42415;
+  6331;
+  213984]
+nlabel=[4552;
+  38245;
+  19835;
+  7854;
+  10762;
+  24215;
+  97739;
+  47637;
+  6395;
+  200650]
+nlabel=[5848;
+  35423;
+  21856;
+  8042;
+  11850;
+  38376;
+  91029;
+  49019;
+  6715;
+  189726]
+nlabel=[7138;
+  35931;
+  23536;
+  8184;
+  12592;
+  53894;
+  84848;
+  46928;
+  6960;
+  177873]
+nlabel=[8234;
+  36786;
+  25968;
+  8464;
+  13921;
+  65075;
+  83061;
+  44641;
+  7143;
+  164591]
+nlabel=[8997;
+  36931;
+  27951;
+  8911;
+  16626;
+  71096;
+  85320;
+  43392;
+  7377;
+  151283]
+nlabel=[9568;
+  36527;
+  29036;
+  9510;
+  20472;
+  73440;
+  89578;
+  42359;
+  7694;
+  139700]
+nlabel=[10128;
+  35973;
+  29477;
+  10350;
+  24963;
+  73905;
+  93857;
+  40889;
+  8045;
+  130297]
+nlabel=[10718;
+  35466;
+  29463;
+  11403;
+  29631;
+  73381;
+  97125;
+  38927;
+  8501;
+  123269]
+nlabel=[11350;
+  35134;
+  29320;
+  12823;
+  33781;
+  72407;
+  99360;
+  36723;
+  8971;
+  118015]
+generateFVectors()
+current fVectors size:457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+nlabel=[5933;
+  16757;
+  6;
+  824;
+  4;
+  2;
+  2;
+  2440;
+  31;
+  4001]
+nlabel=[233;
+  2833;
+  1;
+  24536;
+  327;
+  1312;
+  245;
+  14;
+  10;
+  489]
+nlabel=[3;
+  3;
+  17865;
+  9305;
+  861;
+  214;
+  1249;
+  62;
+  3;
+  435]
+nlabel=[172;
+  3;
+  1690;
+  165;
+  1261;
+  20;
+  1522;
+  406;
+  103;
+  24658]
+nlabel=[2517;
+  3;
+  1218;
+  423;
+  1025;
+  158;
+  1993;
+  637;
+  648;
+  21378]
+nlabel=[17701;
+  1;
+  31469;
+  45292;
+  52043;
+  66757;
+  54355;
+  17414;
+  7153;
+  165699]
+nlabel=[21643;
+  1;
+  28474;
+  41748;
+  48671;
+  74801;
+  50340;
+  27041;
+  12110;
+  153055]
+nlabel=[24911;
+  1;
+  27931;
+  45924;
+  45865;
+  75286;
+  45561;
+  34378;
+  15803;
+  142224]
+nlabel=[27495;
+  1;
+  27660;
+  50241;
+  43366;
+  74686;
+  41086;
+  40529;
+  19248;
+  133572]
+nlabel=[30193;
+  1;
+  27385;
+  53902;
+  40936;
+  74099;
+  37636;
+  45366;
+  22404;
+  125962]
+nlabel=[35966;
+  1;
+  27098;
+  57135;
+  38517;
+  73403;
+  35087;
+  48988;
+  24041;
+  117648]
+nlabel=[45484;
+  1;
+  26783;
+  59956;
+  36140;
+  72718;
+  33178;
+  51532;
+  24139;
+  107953]
+nlabel=[55779;
+  1;
+  26360;
+  62427;
+  33911;
+  71952;
+  31849;
+  53212;
+  23852;
+  98541]
+nlabel=[64265;
+  1;
+  25915;
+  64751;
+  31768;
+  71146;
+  30712;
+  54680;
+  23914;
+  90732]
+nlabel=[70655;
+  1;
+  25468;
+  66790;
+  29650;
+  70534;
+  29971;
+  56089;
+  24317;
+  84409]
+generateFVectors()
+current fVectors size:457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+nlabel=[3629;
+  247;
+  8;
+  1240;
+  19949;
+  2004;
+  1280;
+  27;
+  713;
+  903]
+nlabel=[4441;
+  304;
+  10;
+  2361;
+  15127;
+  1100;
+  2711;
+  101;
+  1730;
+  2115]
+nlabel=[3781;
+  1769;
+  10;
+  1548;
+  13015;
+  1410;
+  2409;
+  269;
+  3411;
+  2378]
+nlabel=[98822;
+  25604;
+  62;
+  44134;
+  71428;
+  27765;
+  32189;
+  9266;
+  75511;
+  73103]
+nlabel=[85834;
+  40852;
+  5232;
+  54352;
+  54768;
+  28297;
+  27995;
+  20855;
+  81138;
+  58561]
+nlabel=[75099;
+  50753;
+  14973;
+  61994;
+  38328;
+  27992;
+  25193;
+  33112;
+  88884;
+  41556]
+nlabel=[69271;
+  56747;
+  17416;
+  67064;
+  25046;
+  26762;
+  23759;
+  37931;
+  95005;
+  38883]
+nlabel=[67507;
+  59538;
+  17992;
+  70933;
+  16287;
+  25371;
+  23144;
+  40052;
+  97573;
+  39487]
+nlabel=[67046;
+  60780;
+  18411;
+  73484;
+  11317;
+  24292;
+  22911;
+  42119;
+  97527;
+  39997]
+nlabel=[66909;
+  61039;
+  18893;
+  74855;
+  8932;
+  23692;
+  22975;
+  44024;
+  95975;
+  40590]
+nlabel=[66704;
+  60871;
+  19475;
+  75354;
+  7719;
+  23465;
+  23107;
+  45648;
+  94215;
+  41326]
+nlabel=[66804;
+  60503;
+  20196;
+  75240;
+  7126;
+  23354;
+  23203;
+  46856;
+  92586;
+  42016]
+nlabel=[67070;
+  60045;
+  20977;
+  74792;
+  6760;
+  23387;
+  23249;
+  47701;
+  91247;
+  42656]
+generateFVectors()
+current fVectors size:457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+kmeans clustering / K=10
+original feature vectors size= 457884
+nlabel=[116;
+  168;
+  10328;
+  1239;
+  7389;
+  86;
+  63;
+  41;
+  34;
+  10536]
+nlabel=[2326;
+  1496;
+  2940;
+  1956;
+  7958;
+  642;
+  782;
+  1454;
+  1001;
+  9445]
+nlabel=[2342;
+  1333;
+  3288;
+  1319;
+  7406;
+  582;
+  2932;
+  1795;
+  1523;
+  7480]
+nlabel=[42982;
+  31182;
+  68378;
+  35187;
+  44713;
+  19824;
+  37429;
+  70269;
+  29151;
+  78769]
+nlabel=[43462;
+  33536;
+  62387;
+  31946;
+  74045;
+  22302;
+  46273;
+  69926;
+  29616;
+  44391]
+nlabel=[43730;
+  32343;
+  57767;
+  35422;
+  81664;
+  24266;
+  49956;
+  69069;
+  30931;
+  32736]
+nlabel=[43078;
+  31193;
+  55077;
+  39947;
+  82296;
+  25888;
+  51431;
+  68511;
+  32479;
+  27984]
+nlabel=[41960;
+  30452;
+  53021;
+  44382;
+  81043;
+  27385;
+  51644;
+  68130;
+  34128;
+  25739]
+nlabel=[40834;
+  30042;
+  51354;
+  48109;
+  79681;
+  28957;
+  50910;
+  67893;
+  35558;
+  24546]
+nlabel=[39860;
+  29863;
+  49943;
+  51383;
+  78715;
+  30480;
+  49355;
+  67720;
+  36755;
+  23810]
+nlabel=[39133;
+  29847;
+  48438;
+  54363;
+  78482;
+  32030;
+  47144;
+  67589;
+  37615;
+  23243]
+nlabel=[38754;
+  29901;
+  46817;
+  57287;
+  79015;
+  33502;
+  44171;
+  67494;
+  38185;
+  22758]
+nlabel=[38584;
+  30037;
+  44978;
+  60349;
+  80053;
+  34899;
+  40679;
+  67478;
+  38531;
+  22296]
+train stage
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+calculateHist start
+DB size:4666
+DB size:173547
+DB size:101872
+DB size:23815
+DB size:17804
+calculateHist start
+DB size:8073
+DB size:158158
+DB size:60895
+DB size:43741
+DB size:25575
+calculateHist start
+DB size:35441
+DB size:162547
+DB size:55592
+DB size:16141
+DB size:24447
+calculateHist start
+DB size:133969
+DB size:120873
+DB size:91470
+DB size:9212
+DB size:10281
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+calculateHist start
+DB size:6299
+DB size:195365
+DB size:78558
+DB size:9369
+DB size:9735
+calculateHist start
+DB size:8073
+DB size:158158
+DB size:60895
+DB size:43741
+DB size:25575
+calculateHist start
+DB size:35441
+DB size:162547
+DB size:55592
+DB size:16141
+DB size:24447
+calculateHist start
+DB size:133969
+DB size:120873
+DB size:91470
+DB size:9212
+DB size:10281
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+calculateHist start
+DB size:6299
+DB size:195365
+DB size:78558
+DB size:9369
+DB size:9735
+calculateHist start
+DB size:4666
+DB size:173547
+DB size:101872
+DB size:23815
+DB size:17804
+calculateHist start
+DB size:35441
+DB size:162547
+DB size:55592
+DB size:16141
+DB size:24447
+calculateHist start
+DB size:133969
+DB size:120873
+DB size:91470
+DB size:9212
+DB size:10281
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+calculateHist start
+DB size:6299
+DB size:195365
+DB size:78558
+DB size:9369
+DB size:9735
+calculateHist start
+DB size:4666
+DB size:173547
+DB size:101872
+DB size:23815
+DB size:17804
+calculateHist start
+DB size:8073
+DB size:158158
+DB size:60895
+DB size:43741
+DB size:25575
+calculateHist start
+DB size:133969
+DB size:120873
+DB size:91470
+DB size:9212
+DB size:10281
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+generateFVectors()
+current fVectors size:457884
+textonMapping
+center size=40
+calculateHist start
+DB size:6299
+DB size:195365
+DB size:78558
+DB size:9369
+DB size:9735
+calculateHist start
+DB size:4666
+DB size:173547
+DB size:101872
+DB size:23815
+DB size:17804
+calculateHist start
+DB size:8073
+DB size:158158
+DB size:60895
+DB size:43741
+DB size:25575
+calculateHist start
+DB size:35441
+DB size:162547
+DB size:55592
+DB size:16141
+DB size:24447
+test start
+Knn train success
+test end
+test start
+Knn train success
+test end
+test start
+Knn train success
+test end
+test start
+Knn train success
+test end
+test start
+Knn train success
+test end
