@@ -112,9 +112,11 @@ private:
 	//! clustering textons using train image by pre-calculation
 	void initializeCenters(int sampling);
 
-	//! testing patch-based textons
-	vector<Mat> histMatching(Mat textonMap, vector<Mat> histDB, int fold);
-	vector<Mat> histMatchingI(Mat textonMap, vector<Mat> histDB, int fold);
+	//! testing patch-based textons with knn(opencv-Euclidean distance)
+	void histMatching(Mat textonMap, vector<Mat> histDB, int fold);
+
+	//! histogram mapping with nearest neigbor using chi-square ditribution
+	void histMatchingI(Mat textonMap, vector<Mat> histDB, int fold);
 
 	//! measurement of wishart distance
 	float wishartDistance(Mat center, Mat comp);
@@ -124,7 +126,10 @@ private:
 
 	//! map textons to each pixel
 	void textonMapping(vector<vector<Mat>> tfvectors, vector<vector<Mat>> testonDic,int fold, int trainfold);
-	
+
+	//! map textons to each pixel for thread
+	void textonMappingT(vector<vector<Mat>> testonDic, int fold, int trainfold);
+
 	//! generate random matrix for random projection
 	void generateRandomMat(Mat& randomMat, int highD, int lowD, string rMode);
 
@@ -168,5 +173,6 @@ private:
 
 	thread textonT[5];
 	thread mapT[5];
+	thread matchT[5];
 };
 #endif /* PTEXTON_HPP*/
