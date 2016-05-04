@@ -40,9 +40,9 @@ int main(int argc, char** argv){
 	PTexton pTexton = PTexton();
 	pTexton.initialize(fname, pSize, K, knn);	//file name, patch size, K,RP
 	
+	//pTexton.evaluate();
 	pTexton.learningTexton();
 	pTexton.train();
-	//pTexton.evaluate();
 	//pTexton.test();
 	//pTexton.errorAssessment();
 	return 0;
