@@ -257,231 +257,231 @@ void ClassificationError::print(void){
   Vec2f oa;
   
   fout << endl << "*** Accuracy Assessment ***" << endl << endl;
-  fout << "*** on training data ***" << endl;
-  fout << " >> Loss:\t" << this->errLoss[0] << "\t+-\t" << this->errLossStd[0] << endl;
-  fout << " >> Error:\t" << this->errAbs[0] << "\t+-\t" << this->errAbsStd[0] << endl;
-  fout << " >> Margin:\t" << this->margin[0] << "\t+-\t" << this->marginStd[0] << endl;
-  if (CV_MAT_CN(this->confusionLoss[0].type()) == 1){
-      oa.val[0] = oa.val[1] = 0;
-      fout << " >> Confusion (Loss):" << endl;
-      for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
-	  n = this->confusionLoss[0].at<float>(c_ref, this->confusionLoss[0].cols-1);
-	  fout << "\t";
-	  for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
-	      if (n>0){
-			fout << setw(10) << left << (this->confusionLoss[0].at<float>(c_ref, c_est)/n) << "\t";
-		  if (c_ref == c_est){
-		      oa.val[0] += this->confusionLoss[0].at<float>(c_ref, c_est)/n;
-		      oa.val[1] += pow( this->confusionLoss[0].at<float>(c_ref, c_est)/n,2);
-		  }
-	      }else
-		  fout << setw(10) << left << 0.0 << "\t";
-	  }
-	  fout << "( " << n << " )" << endl;
-      }
-      fout << " >> OA (Loss Training): " << oa.val[0]/this->confusionLoss[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[0].rows)/(this->confusionLoss[0].rows-1)) << endl;
-  }else{
-      n = this->confusionLoss[0].at<Vec2f>(0, this->confusionLoss[0].cols-1).val[0];
-      oa.val[0] = oa.val[1] = 0;
-      fout << " >> Confusion (Loss) Mean:" << endl;
-      for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
-		  fout << "\t";
-		  for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
-			  Vec2f cur = this->confusionLoss[0].at<Vec2f>(c_ref, c_est);
-			  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
-			  if (c_ref == c_est){
-				  oa.val[0] += 1./n * cur.val[0];
-				  oa.val[1] += pow(1./n * cur.val[0],2);
-			  }
-		  }
-		  fout << endl;
-      }
-      fout << " >> Confusion (Loss) StdDev:" << endl;
-      for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
-	  fout << "\t";
-	  for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
-		  Vec2f cur = this->confusionLoss[0].at<Vec2f>(c_ref, c_est);
-		  v = 1./(n-1)*(cur.val[1] - 1./n*pow(cur.val[0],2));
-		  if (v>0)
-		      fout << setw(10) << left << sqrt(v) << "\t";
-		  else
-		      fout << setw(10) << left << 0.0 << "\t";
-	  }
-	  fout << endl;
-      }
-      fout << " >> OA (Loss Training): " << oa.val[0]/this->confusionLoss[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[0].rows)/(this->confusionLoss[0].rows-1)) << endl;
-  }
-  if (CV_MAT_CN(this->confusionAbs[0].type()) == 1){
-      oa.val[0] = oa.val[1] = 0;
-      fout << " >> Confusion (Error):" << endl;
-      for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
-		  n = this->confusionAbs[0].at<float>(c_ref, this->confusionAbs[0].cols-1);
-		  fout << "\t";
-		  for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
-			  if (n>0){
-				  fout << setw(10) << left << this->confusionAbs[0].at<float>(c_ref, c_est)/n << "\t";
-				  if (c_ref == c_est){
-					  oa.val[0] += this->confusionAbs[0].at<float>(c_ref, c_est)/n;
-					  oa.val[1] += pow(this->confusionAbs[0].at<float>(c_ref, c_est)/n,2);
-				  }
-			  }else
-					fout << setw(10) << left << 0.0 << "\t";
-		  }
-		  fout << "( " << n << " )" << endl;
-      }
-      fout << " >> OA (Error Training): " << oa.val[0]/this->confusionAbs[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[0].rows)/(this->confusionAbs[0].rows-1)) << endl;
-  }else{
-      n = this->confusionAbs[0].at<Vec2f>(0, this->confusionAbs[0].cols-1).val[0];
-      oa.val[0] = oa.val[1] = 0;
-      fout << " >> Confusion (Error) Mean:" << endl;
-      for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
-		fout << "\t";
-		for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
-		  Vec2f cur = this->confusionAbs[0].at<Vec2f>(c_ref, c_est);
-		  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
-		  if (c_ref == c_est){
-		      oa.val[0] += 1./n * cur.val[0];
-		      oa.val[1] += pow(1./n * cur.val[0],2);
-		  }
-		}
-	  fout << endl;
-      }
-      fout << " >> Confusion (Error) StdDev:" << endl;
-      for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
-		  fout << "\t";
-		  for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
-			  Vec2f cur = this->confusionAbs[0].at<Vec2f>(c_ref, c_est);
-			  v = 1./(n-1)*(cur.val[1] - 1./n*pow(cur.val[0],2));
-			  if (v>0)
-				  fout << setw(10) << left << sqrt(v) << "\t";
-			  else
-				  fout << setw(10) << left << 0.0 << "\t";
-		  }
-		  fout << endl;
-      }
-      fout << " >> OA (Error Training): " << oa.val[0]/this->confusionAbs[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[0].rows)/(this->confusionAbs[0].rows-1)) << endl;
-  }
-  fout << "True Positives TP" << endl;
-  fout << "False Negatives FN" << endl;
-  fout << "False Positives FP" << endl;
-  fout << "True Negatives TN" << endl;
-  fout << "Test outcome Positive TPos" << endl;
-  fout << "Test outcome Negative TNeg" << endl;
-  fout << "Test outcome Correct TCor" << endl;
-  fout << "Test outcome Wrong TWro" << endl;
-  fout << "Positive Predictive Value, precision PPV" << endl;
-  fout << "False Discovery Rate FDR" << endl;
-  fout << "False Ommision Rate FOR" << endl;
-  fout << "Negative Predictive Value NPV" << endl;
-  fout << "True Positive Rate, sensitivity, recall TPR" << endl;
-  fout << "False Positive Rate, fall-out FPR" << endl;
-  fout << "False Negative Rate FNR" << endl;
-  fout << "True Negative Rate, specificity TNR" << endl;
-  fout << "Positive Likelihood Ratio LR+" << endl;
-  fout << "Negative Likelihood Ratio LR-" << endl;
-  fout << "F-measure (beta=0.5) F0.5" << endl;
-  fout << "F-measure (beta=1) F1" << endl;
-  fout << "F-measure (beta=2) F2" << endl;
-  fout << "G-measure G" << endl;
-  fout << "Information Content IC" << endl;
-  fout << "(Overall) Accuracy AC" << endl;
-  fout << "Balanced Accuracy" << endl;
-  fout << "Expected Accuracy" << endl;
-  fout << "Matthews correlations coefficient MCC" << endl;
-  fout << "Informedness I" << endl;
-  fout << "Markedness M" << endl;
-  fout << "kappa k" << endl;
-  fout << "Diagnostics Odds Ratio DOR" << endl;
-  fout << endl << endl;
-  
-  // TP FN FP TN
-  for(int c=0; c < this->confusionAbs[1].rows; c++){
-	  double Pos = this->stats[0].at(c).at<float>(0,0) + this->stats[0].at(c).at<float>(0,1);
-	  double Neg = this->stats[0].at(c).at<float>(0,2) + this->stats[0].at(c).at<float>(0,3);
-	  double N = Pos + Neg;
-	  double Prev = Pos/N;
-	  fout << endl << "Statistics for class " << c << endl;
-	  fout << "Total Population N:\t" << N << endl;
-	  fout << "Condition Positive Pos:\t" << Pos << endl;
-	  fout << "Condition Negative Neg:\t" << Neg << endl;
-	  fout << "Prevalence Prev:\t" << Prev << endl;
-	  
-	  Mat statistics(31, 11, CV_32FC1);
-	  double AUC = 0;
-	  for(int t=0; t<=10; t++){
-		  double TP = this->stats[0].at(c).at<float>(t,0);
-		  double FN = this->stats[0].at(c).at<float>(t,1);
-		  double FP = this->stats[0].at(c).at<float>(t,2);
-		  double TN = this->stats[0].at(c).at<float>(t,3);
-		  statistics.at<float>(0, t) = TP;
-		  statistics.at<float>(1, t) = FN;
-		  statistics.at<float>(2, t) = FP;
-		  statistics.at<float>(3, t) = TN;
-		  // Level 0
-		  double TPos = TP + FP;
-		  double TNeg = TN + FN;
-		  double TCor = TP + TN;
-		  double TWro = FP + FN;
-		  statistics.at<float>(4, t) = TPos;
-		  statistics.at<float>(5, t) = TNeg;
-		  statistics.at<float>(6, t) = TCor;
-		  statistics.at<float>(7, t) = TWro;
-		  // Level 1
-		  double PPV = TP / TPos; if (TPos == 0) PPV = 0;
-		  double FDR = FP / TPos; if (TPos == 0) FDR = 0;
-		  double FOR = FN / TNeg; if (TNeg == 0) FOR = 0;
-		  double NPV = TN / TNeg; if (TNeg == 0) NPV = 0;
-		  double TPR = TP / Pos;
-		  double FPR = FP / Neg;
-		  double FNR = FN / Pos;
-		  double TNR = TN / Neg;
-		  statistics.at<float>(8, t) = PPV;
-		  statistics.at<float>(9, t) = FDR;
-		  statistics.at<float>(10, t) = FOR;
-		  statistics.at<float>(11, t) = NPV;
-		  statistics.at<float>(12, t) = TPR;
-		  statistics.at<float>(13, t) = FPR;
-		  statistics.at<float>(14, t) = FNR;
-		  statistics.at<float>(15, t) = TNR;
-		  // Level 2
-		  double LRp = TPR / FPR; if (FPR == 0) LRp = DBL_MAX;
-		  double LRm = FNR / TNR; if (TNR == 0) LRm = DBL_MAX;
-		  double Fhalf = 1.25*PPV*TPR / (0.25*PPV + TPR);  if (TP == 0) Fhalf = 0;
-		  double Fone = 2*PPV*TPR / (PPV + TPR);  if (TP == 0) Fone = 0;
-		  double Ftwo = 5*PPV*TPR / (4*PPV + TPR);  if (TP == 0) Ftwo = 0;
-		  double G = sqrt(PPV*TPR);
-		  double IC = (PPV+TPR) / 2.;
-		  double AC = TCor / N;
-		  double BA = (TPR + TNR) / 2.;
-		  double EA = ( Pos*TPos/N + Neg*TNeg/N) / N;
-		  double MCC = (TP*TN - FP*FN) / sqrt(TPos*Pos*TNeg*Neg); if (TPos*TNeg == 0) MCC = 0;
-		  double I = TPR + TNR - 1;
-		  double M = PPV + NPV - 1;
-		  statistics.at<float>(16, t) = LRp;
-		  statistics.at<float>(17, t) = LRm;
-		  statistics.at<float>(18, t) = Fhalf;
-		  statistics.at<float>(19, t) = Fone;
-		  statistics.at<float>(20, t) = Ftwo;
-		  statistics.at<float>(21, t) = G;
-		  statistics.at<float>(22, t) = IC;
-		  statistics.at<float>(23, t) = AC;
-		  statistics.at<float>(24, t) = BA;
-		  statistics.at<float>(25, t) = EA;
-		  statistics.at<float>(26, t) = MCC;
-		  statistics.at<float>(27, t) = I;
-		  statistics.at<float>(28, t) = M;
-		  // Level 3
-		  double k = (AC - EA) / (1 - EA);
-		  double DOR = LRp / LRm; if (LRm == 0) DOR = DBL_MAX;
-		  statistics.at<float>(29, t) = k;
-		  statistics.at<float>(30, t) = DOR;
-		  AUC += TPR*0.1;
-	  }
-	  fout << statistics << endl;
-	  fout << "Area Under the Curve AUC:\t" << AUC << endl;
-	  fout << "Discrimination D:\t" << (AUC-0.5) << endl;
-  }
-  
+  //fout << "*** on training data ***" << endl;
+  //fout << " >> Loss:\t" << this->errLoss[0] << "\t+-\t" << this->errLossStd[0] << endl;
+  //fout << " >> Error:\t" << this->errAbs[0] << "\t+-\t" << this->errAbsStd[0] << endl;
+  //fout << " >> Margin:\t" << this->margin[0] << "\t+-\t" << this->marginStd[0] << endl;
+  //if (CV_MAT_CN(this->confusionLoss[0].type()) == 1){
+  //    oa.val[0] = oa.val[1] = 0;
+  //    fout << " >> Confusion (Loss):" << endl;
+  //    for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
+	 // n = this->confusionLoss[0].at<float>(c_ref, this->confusionLoss[0].cols-1);
+	 // fout << "\t";
+	 // for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
+	 //     if (n>0){
+		//	fout << setw(10) << left << (this->confusionLoss[0].at<float>(c_ref, c_est)/n) << "\t";
+		//  if (c_ref == c_est){
+		//      oa.val[0] += this->confusionLoss[0].at<float>(c_ref, c_est)/n;
+		//      oa.val[1] += pow( this->confusionLoss[0].at<float>(c_ref, c_est)/n,2);
+		//  }
+	 //     }else
+		//  fout << setw(10) << left << 0.0 << "\t";
+	 // }
+	 // fout << "( " << n << " )" << endl;
+  //    }
+  //    fout << " >> OA (Loss Training): " << oa.val[0]/this->confusionLoss[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[0].rows)/(this->confusionLoss[0].rows-1)) << endl;
+  //}else{
+  //    n = this->confusionLoss[0].at<Vec2f>(0, this->confusionLoss[0].cols-1).val[0];
+  //    oa.val[0] = oa.val[1] = 0;
+  //    fout << " >> Confusion (Loss) Mean:" << endl;
+  //    for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
+		//  fout << "\t";
+		//  for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
+		//	  Vec2f cur = this->confusionLoss[0].at<Vec2f>(c_ref, c_est);
+		//	  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
+		//	  if (c_ref == c_est){
+		//		  oa.val[0] += 1./n * cur.val[0];
+		//		  oa.val[1] += pow(1./n * cur.val[0],2);
+		//	  }
+		//  }
+		//  fout << endl;
+  //    }
+  //    fout << " >> Confusion (Loss) StdDev:" << endl;
+  //    for(int c_ref=0; c_ref<this->confusionLoss[0].rows; c_ref++){
+	 // fout << "\t";
+	 // for(int c_est=0; c_est<this->confusionLoss[0].cols-1; c_est++){
+		//  Vec2f cur = this->confusionLoss[0].at<Vec2f>(c_ref, c_est);
+		//  v = 1./(n-1)*(cur.val[1] - 1./n*pow(cur.val[0],2));
+		//  if (v>0)
+		//      fout << setw(10) << left << sqrt(v) << "\t";
+		//  else
+		//      fout << setw(10) << left << 0.0 << "\t";
+	 // }
+	 // fout << endl;
+  //    }
+  //    fout << " >> OA (Loss Training): " << oa.val[0]/this->confusionLoss[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[0].rows)/(this->confusionLoss[0].rows-1)) << endl;
+  //}
+  //if (CV_MAT_CN(this->confusionAbs[0].type()) == 1){
+  //    oa.val[0] = oa.val[1] = 0;
+  //    fout << " >> Confusion (Error):" << endl;
+  //    for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
+		//  n = this->confusionAbs[0].at<float>(c_ref, this->confusionAbs[0].cols-1);
+		//  fout << "\t";
+		//  for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
+		//	  if (n>0){
+		//		  fout << setw(10) << left << this->confusionAbs[0].at<float>(c_ref, c_est)/n << "\t";
+		//		  if (c_ref == c_est){
+		//			  oa.val[0] += this->confusionAbs[0].at<float>(c_ref, c_est)/n;
+		//			  oa.val[1] += pow(this->confusionAbs[0].at<float>(c_ref, c_est)/n,2);
+		//		  }
+		//	  }else
+		//			fout << setw(10) << left << 0.0 << "\t";
+		//  }
+		//  fout << "( " << n << " )" << endl;
+  //    }
+  //    fout << " >> OA (Error Training): " << oa.val[0]/this->confusionAbs[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[0].rows)/(this->confusionAbs[0].rows-1)) << endl;
+  //}else{
+  //    n = this->confusionAbs[0].at<Vec2f>(0, this->confusionAbs[0].cols-1).val[0];
+  //    oa.val[0] = oa.val[1] = 0;
+  //    fout << " >> Confusion (Error) Mean:" << endl;
+  //    for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
+		//fout << "\t";
+		//for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
+		//  Vec2f cur = this->confusionAbs[0].at<Vec2f>(c_ref, c_est);
+		//  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
+		//  if (c_ref == c_est){
+		//      oa.val[0] += 1./n * cur.val[0];
+		//      oa.val[1] += pow(1./n * cur.val[0],2);
+		//  }
+		//}
+	 // fout << endl;
+  //    }
+  //    fout << " >> Confusion (Error) StdDev:" << endl;
+  //    for(int c_ref=0; c_ref<this->confusionAbs[0].rows; c_ref++){
+		//  fout << "\t";
+		//  for(int c_est=0; c_est<this->confusionAbs[0].cols-1; c_est++){
+		//	  Vec2f cur = this->confusionAbs[0].at<Vec2f>(c_ref, c_est);
+		//	  v = 1./(n-1)*(cur.val[1] - 1./n*pow(cur.val[0],2));
+		//	  if (v>0)
+		//		  fout << setw(10) << left << sqrt(v) << "\t";
+		//	  else
+		//		  fout << setw(10) << left << 0.0 << "\t";
+		//  }
+		//  fout << endl;
+  //    }
+  //    fout << " >> OA (Error Training): " << oa.val[0]/this->confusionAbs[0].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[0].rows)/(this->confusionAbs[0].rows-1)) << endl;
+  //}
+  //fout << "True Positives TP" << endl;
+  //fout << "False Negatives FN" << endl;
+  //fout << "False Positives FP" << endl;
+  //fout << "True Negatives TN" << endl;
+  //fout << "Test outcome Positive TPos" << endl;
+  //fout << "Test outcome Negative TNeg" << endl;
+  //fout << "Test outcome Correct TCor" << endl;
+  //fout << "Test outcome Wrong TWro" << endl;
+  //fout << "Positive Predictive Value, precision PPV" << endl;
+  //fout << "False Discovery Rate FDR" << endl;
+  //fout << "False Ommision Rate FOR" << endl;
+  //fout << "Negative Predictive Value NPV" << endl;
+  //fout << "True Positive Rate, sensitivity, recall TPR" << endl;
+  //fout << "False Positive Rate, fall-out FPR" << endl;
+  //fout << "False Negative Rate FNR" << endl;
+  //fout << "True Negative Rate, specificity TNR" << endl;
+  //fout << "Positive Likelihood Ratio LR+" << endl;
+  //fout << "Negative Likelihood Ratio LR-" << endl;
+  //fout << "F-measure (beta=0.5) F0.5" << endl;
+  //fout << "F-measure (beta=1) F1" << endl;
+  //fout << "F-measure (beta=2) F2" << endl;
+  //fout << "G-measure G" << endl;
+  //fout << "Information Content IC" << endl;
+  //fout << "(Overall) Accuracy AC" << endl;
+  //fout << "Balanced Accuracy" << endl;
+  //fout << "Expected Accuracy" << endl;
+  //fout << "Matthews correlations coefficient MCC" << endl;
+  //fout << "Informedness I" << endl;
+  //fout << "Markedness M" << endl;
+  //fout << "kappa k" << endl;
+  //fout << "Diagnostics Odds Ratio DOR" << endl;
+  //fout << endl << endl;
+  //
+  //// TP FN FP TN
+  //for(int c=0; c < this->confusionAbs[1].rows; c++){
+	 // double Pos = this->stats[0].at(c).at<float>(0,0) + this->stats[0].at(c).at<float>(0,1);
+	 // double Neg = this->stats[0].at(c).at<float>(0,2) + this->stats[0].at(c).at<float>(0,3);
+	 // double N = Pos + Neg;
+	 // double Prev = Pos/N;
+	 // fout << endl << "Statistics for class " << c << endl;
+	 // fout << "Total Population N:\t" << N << endl;
+	 // fout << "Condition Positive Pos:\t" << Pos << endl;
+	 // fout << "Condition Negative Neg:\t" << Neg << endl;
+	 // fout << "Prevalence Prev:\t" << Prev << endl;
+	 // 
+	 // Mat statistics(31, 11, CV_32FC1);
+	 // double AUC = 0;
+	 // for(int t=0; t<=10; t++){
+		//  double TP = this->stats[0].at(c).at<float>(t,0);
+		//  double FN = this->stats[0].at(c).at<float>(t,1);
+		//  double FP = this->stats[0].at(c).at<float>(t,2);
+		//  double TN = this->stats[0].at(c).at<float>(t,3);
+		//  statistics.at<float>(0, t) = TP;
+		//  statistics.at<float>(1, t) = FN;
+		//  statistics.at<float>(2, t) = FP;
+		//  statistics.at<float>(3, t) = TN;
+		//  // Level 0
+		//  double TPos = TP + FP;
+		//  double TNeg = TN + FN;
+		//  double TCor = TP + TN;
+		//  double TWro = FP + FN;
+		//  statistics.at<float>(4, t) = TPos;
+		//  statistics.at<float>(5, t) = TNeg;
+		//  statistics.at<float>(6, t) = TCor;
+		//  statistics.at<float>(7, t) = TWro;
+		//  // Level 1
+		//  double PPV = TP / TPos; if (TPos == 0) PPV = 0;
+		//  double FDR = FP / TPos; if (TPos == 0) FDR = 0;
+		//  double FOR = FN / TNeg; if (TNeg == 0) FOR = 0;
+		//  double NPV = TN / TNeg; if (TNeg == 0) NPV = 0;
+		//  double TPR = TP / Pos;
+		//  double FPR = FP / Neg;
+		//  double FNR = FN / Pos;
+		//  double TNR = TN / Neg;
+		//  statistics.at<float>(8, t) = PPV;
+		//  statistics.at<float>(9, t) = FDR;
+		//  statistics.at<float>(10, t) = FOR;
+		//  statistics.at<float>(11, t) = NPV;
+		//  statistics.at<float>(12, t) = TPR;
+		//  statistics.at<float>(13, t) = FPR;
+		//  statistics.at<float>(14, t) = FNR;
+		//  statistics.at<float>(15, t) = TNR;
+		//  // Level 2
+		//  double LRp = TPR / FPR; if (FPR == 0) LRp = DBL_MAX;
+		//  double LRm = FNR / TNR; if (TNR == 0) LRm = DBL_MAX;
+		//  double Fhalf = 1.25*PPV*TPR / (0.25*PPV + TPR);  if (TP == 0) Fhalf = 0;
+		//  double Fone = 2*PPV*TPR / (PPV + TPR);  if (TP == 0) Fone = 0;
+		//  double Ftwo = 5*PPV*TPR / (4*PPV + TPR);  if (TP == 0) Ftwo = 0;
+		//  double G = sqrt(PPV*TPR);
+		//  double IC = (PPV+TPR) / 2.;
+		//  double AC = TCor / N;
+		//  double BA = (TPR + TNR) / 2.;
+		//  double EA = ( Pos*TPos/N + Neg*TNeg/N) / N;
+		//  double MCC = (TP*TN - FP*FN) / sqrt(TPos*Pos*TNeg*Neg); if (TPos*TNeg == 0) MCC = 0;
+		//  double I = TPR + TNR - 1;
+		//  double M = PPV + NPV - 1;
+		//  statistics.at<float>(16, t) = LRp;
+		//  statistics.at<float>(17, t) = LRm;
+		//  statistics.at<float>(18, t) = Fhalf;
+		//  statistics.at<float>(19, t) = Fone;
+		//  statistics.at<float>(20, t) = Ftwo;
+		//  statistics.at<float>(21, t) = G;
+		//  statistics.at<float>(22, t) = IC;
+		//  statistics.at<float>(23, t) = AC;
+		//  statistics.at<float>(24, t) = BA;
+		//  statistics.at<float>(25, t) = EA;
+		//  statistics.at<float>(26, t) = MCC;
+		//  statistics.at<float>(27, t) = I;
+		//  statistics.at<float>(28, t) = M;
+		//  // Level 3
+		//  double k = (AC - EA) / (1 - EA);
+		//  double DOR = LRp / LRm; if (LRm == 0) DOR = DBL_MAX;
+		//  statistics.at<float>(29, t) = k;
+		//  statistics.at<float>(30, t) = DOR;
+		//  AUC += TPR*0.1;
+	 // }
+	 // fout << statistics << endl;
+	 // fout << "Area Under the Curve AUC:\t" << AUC << endl;
+	 // fout << "Discrimination D:\t" << (AUC-0.5) << endl;
+  //}
+  //
   fout << endl << "*** on test data ***" << endl;
   fout << " >> Loss:\t" << this->errLoss[1] << "\t+-\t" << this->errLossStd[1] << endl;
   fout << " >> Error:\t" << this->errAbs[1] << "\t+-\t" << this->errAbsStd[1] << endl;
@@ -491,7 +491,7 @@ void ClassificationError::print(void){
       fout << " >> Confusion (Loss):" << endl;
       for(int c_ref=0; c_ref<this->confusionLoss[1].rows; c_ref++){
 		  n = this->confusionLoss[1].at<float>(c_ref, this->confusionLoss[1].cols-1);
-		  fout << "\t";
+		  fout << "ref"<<c_ref<<"\t";
 		  for(int c_est=0; c_est<this->confusionLoss[1].cols-1; c_est++){
 			  if (n>0){
 				  fout << setw(10) << left << this->confusionLoss[1].at<float>(c_ref, c_est)/n << "\t";
@@ -510,7 +510,7 @@ void ClassificationError::print(void){
       oa.val[0] = oa.val[1] = 0;
       fout << " >> Confusion (Loss) Mean:" << endl;
       for(int c_ref=0; c_ref<this->confusionLoss[1].rows; c_ref++){
-		  fout << "\t";
+		  fout << "ref" << c_ref << "\t";
 		  for(int c_est=0; c_est<this->confusionLoss[1].cols-1; c_est++){
 			  Vec2f cur = this->confusionLoss[1].at<Vec2f>(c_ref, c_est);
 			  fout << setw(10) << left << 1./n * cur.val[0] << "\t";
@@ -541,7 +541,7 @@ void ClassificationError::print(void){
       fout << " >> Confusion (Error):" << endl;
       for(int c_ref=0; c_ref<this->confusionAbs[1].rows; c_ref++){
 		  n = this->confusionAbs[1].at<float>(c_ref, this->confusionAbs[1].cols-1);
-		  fout << "\t";
+		  fout << "ref" << c_ref << "\t";
 		  for(int c_est=0; c_est<this->confusionAbs[1].cols-1; c_est++){
 			  if (n>0){
 				fout << setw(10) << left << this->confusionAbs[1].at<float>(c_ref, c_est)/n << "\t";
@@ -586,38 +586,38 @@ void ClassificationError::print(void){
       }
       fout << " >> OA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
   }
-  fout << "True Positives TP" << endl;
-  fout << "False Negatives FN" << endl;
-  fout << "False Positives FP" << endl;
-  fout << "True Negatives TN" << endl;
-  fout << "Test outcome Positive TPos" << endl;
-  fout << "Test outcome Negative TNeg" << endl;
-  fout << "Test outcome Correct TCor" << endl;
-  fout << "Test outcome Wrong TWro" << endl;
-  fout << "Positive Predictive Value, precision PPV" << endl;
-  fout << "False Discovery Rate FDR" << endl;
-  fout << "False Ommision Rate FOR" << endl;
-  fout << "Negative Predictive Value NPV" << endl;
-  fout << "True Positive Rate, sensitivity, recall TPR" << endl;
-  fout << "False Positive Rate, fall-out FPR" << endl;
-  fout << "False Negative Rate FNR" << endl;
-  fout << "True Negative Rate, specificity TNR" << endl;
-  fout << "Positive Likelihood Ratio LR+" << endl;
-  fout << "Negative Likelihood Ratio LR-" << endl;
-  fout << "F-measure (beta=0.5) F0.5" << endl;
-  fout << "F-measure (beta=1) F1" << endl;
-  fout << "F-measure (beta=2) F2" << endl;
-  fout << "G-measure G" << endl;
-  fout << "Information Content IC" << endl;
-  fout << "(Overall) Accuracy AC" << endl;
-  fout << "Balanced Accuracy" << endl;
-  fout << "Expected Accuracy" << endl;
-  fout << "Matthews correlations coefficient MCC" << endl;
-  fout << "Informedness I" << endl;
-  fout << "Markedness M" << endl;
-  fout << "kappa k" << endl;
-  fout << "Diagnostics Odds Ratio DOR" << endl;
-  fout << endl << endl;
+  vector<string> name;
+  name.push_back("True Positives TP");
+  name.push_back("False Negatives FN");
+  name.push_back("False Positives FP");
+  name.push_back("True Negatives TN");
+  name.push_back("Test outcome Positive TPos");
+  name.push_back("Test outcome Negative TNeg");
+  name.push_back("Test outcome Correct TCor");
+  name.push_back("Test outcome Wrong TWro");
+  name.push_back("Positive Predictive Value, precision PPV");
+  name.push_back("False Discovery Rate FDR");
+  name.push_back("False Ommision Rate FOR");
+  name.push_back("Negative Predictive Value NPV");
+  name.push_back("True Positive Rate, sensitivity, recall TPR");
+  name.push_back("False Positive Rate, fall-out FPR");
+  name.push_back("False Negative Rate FNR");
+  name.push_back("True Negative Rate, specificity TNR");
+  name.push_back("Positive Likelihood Ratio LR+");
+  name.push_back("Negative Likelihood Ratio LR-");
+  name.push_back("F-measure (beta=0.5) F0.5");
+  name.push_back("F-measure (beta=1) F1");
+  name.push_back("F-measure (beta=2) F2");
+  name.push_back("G-measure G");
+  name.push_back("Information Content IC");
+  name.push_back("(Overall) Accuracy AC");
+  name.push_back("Balanced Accuracy");
+  name.push_back("Expected Accuracy");
+  name.push_back("Matthews correlations coefficient MCC");
+  name.push_back("Informedness I");
+  name.push_back("Markedness M");
+  name.push_back("kappa k");
+  name.push_back("Diagnostics Odds Ratio DOR");
   
   // TP FN FP TN
   for(int c=0; c < this->confusionAbs[1].rows; c++){
@@ -702,7 +702,10 @@ void ClassificationError::print(void){
 		  statistics.at<float>(30, t) = DOR;
 		  AUC += TPR*0.1;
 	  }
-	  fout << statistics << endl;
+	  for (int i = 0; i < 31; i++){
+		  fout << name.at(i)<<"\t";
+		  fout << statistics.row(i) << endl;
+	  }
 	  fout << "Area Under the Curve AUC:\t" << AUC << endl;
 	  fout << "Discrimination D:\t" << (AUC-0.5) << endl;
   }

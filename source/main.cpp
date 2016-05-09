@@ -15,6 +15,7 @@ int main(int argc, char** argv){
    
 	int pSize=3, K=3, knn=1;
 	string RP = "no";
+	string run = "eval";
 	//patchTextons.exe data.rat K pSize RP_Type	//image_type
 
 	if (argc < 2){
@@ -33,18 +34,27 @@ int main(int argc, char** argv){
 	else if (argc < 6){
 		K = atoi(argv[2]);
 		pSize = atoi(argv[3]);
-		 knn = atoi(argv[4]);
+		 run = argv[4];
 	}
 
 	string fname = argv[1];
 	PTexton pTexton = PTexton();
 	pTexton.initialize(fname, pSize, K, knn);	//file name, patch size, K,RP
 	
-	//pTexton.evaluate();
-	pTexton.learningTexton();
-	pTexton.train();
-	//pTexton.test();
-	//pTexton.errorAssessment();
+	if (run == "eval"){
+		pTexton.evaluate();
+	}
+	else if (run == "train"){
+		pTexton.learningTexton();
+		pTexton.train();
+	}
+	else if (run == "test"){
+		pTexton.test();
+		pTexton.errorAssessment();
+	}
+	else if (run == "assess"){
+		pTexton.errorAssessment();
+	}
 	return 0;
 }
 

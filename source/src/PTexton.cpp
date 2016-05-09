@@ -942,18 +942,19 @@ void PTexton::test(){
 	}
 
 
-	for (int fold = 0; fold < nfolds; fold++){
+	/*ofile<<"euclide dist is used"<<endl;
+	for (int fold = 0; fold < nfolds; fold++){	
 		Mat test_map = imread("testfold" + to_string(fold) + "trainfold" + to_string(fold) + "textonMap.png", 0);
 		histMatching(test_map, globalhistDB[fold], fold);
-	}
-
-	/*for (int fold = 0; fold < nfolds; fold++){
+	}*/
+	ofile << "chi_dist is used" << endl;
+	for (int fold = 0; fold < nfolds; fold++){
 		Mat test_map = imread("testfold" + to_string(fold) + "trainfold" + to_string(fold) + "textonMap.png", 0);
 		matchT[fold] = thread(&PTexton::histMatchingI, this, test_map, globalhistDB[fold], fold);
 	}
 	for (int fold = 0; fold < nfolds; fold++){
 		matchT[fold].join();
-	}*/
+	}
 }
 void PTexton::errorAssessment(){
 
@@ -967,6 +968,8 @@ void PTexton::errorAssessment(){
 			img.convertTo(img, CV_32F);img /= 255.0;
 			outputc.push_back(img);
 		}
+		Mat outclass;
+		hconcat(outputc, outclass);
 		estimate.push_back(outputc);
 	}
 	vector<vector<Mat>> reference;
