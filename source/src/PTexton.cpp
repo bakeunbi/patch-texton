@@ -78,7 +78,7 @@ void PTexton::initialize(string fname, int patchSize, int K, int knn){
 	this->pSize = patchSize;
 	this->half_patch = this->pSize / 2;
 	this->K = K;
-	//this->RP = rp;
+	this->RP = "yes";
 
 //	this->vSize = 0;
 	ofile.open(to_string(K) + "K" + to_string(pSize) + "p" + "Experimental data.txt");
@@ -563,7 +563,7 @@ void PTexton::histMatching(Mat textonMap, vector<Mat> histDBi, int fold){
 			patch.convertTo(patch, CV_32F);
 
 			//calculation of histogram in each patch
-			int histSize = histDBi.at(0).cols;
+			int histSize = trainData.cols;
 			float range[] = { 0, histSize };
 			const float* histRange = { range };
 			bool uniform = true; bool accumulate = false;
@@ -942,19 +942,19 @@ void PTexton::test(){
 	}
 
 
-	/*ofile<<"euclide dist is used"<<endl;
+	ofile<<"euclide dist is used"<<endl;
 	for (int fold = 0; fold < nfolds; fold++){	
 		Mat test_map = imread("testfold" + to_string(fold) + "trainfold" + to_string(fold) + "textonMap.png", 0);
 		histMatching(test_map, globalhistDB[fold], fold);
-	}*/
-	ofile << "chi_dist is used" << endl;
+	}
+	/*ofile << "chi_dist is used" << endl;
 	for (int fold = 0; fold < nfolds; fold++){
 		Mat test_map = imread("testfold" + to_string(fold) + "trainfold" + to_string(fold) + "textonMap.png", 0);
 		matchT[fold] = thread(&PTexton::histMatchingI, this, test_map, globalhistDB[fold], fold);
 	}
 	for (int fold = 0; fold < nfolds; fold++){
 		matchT[fold].join();
-	}
+	}*/
 }
 void PTexton::errorAssessment(){
 

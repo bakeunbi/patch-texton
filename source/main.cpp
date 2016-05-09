@@ -14,7 +14,7 @@ using namespace std;
 int main(int argc, char** argv){
    
 	int pSize=3, K=3, knn=1;
-	string RP = "no";
+	//string RP = "yes";
 	string run = "eval";
 	//patchTextons.exe data.rat K pSize RP_Type	//image_type
 

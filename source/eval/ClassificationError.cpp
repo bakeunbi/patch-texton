@@ -504,7 +504,29 @@ void ClassificationError::print(void){
 		  }
 		  fout << "( " << n << " )" << endl;
       }
-      fout << " >> OA (Loss Test): " << oa.val[0]/this->confusionLoss[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[1].rows)/(this->confusionLoss[1].rows-1)) << endl;
+      fout << " >> BA (Loss Test): " << oa.val[0]/this->confusionLoss[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[1].rows)/(this->confusionLoss[1].rows-1)) << endl;
+
+	  oa.val[0] = oa.val[1] = 0;
+	  fout << " >> Confusion (Loss):" << endl;
+	  n = 0;
+	  for (int c_ref = 0; c_ref<this->confusionLoss[1].rows; c_ref++){
+		  n += this->confusionLoss[1].at<float>(c_ref, this->confusionLoss[1].cols - 1);
+		  fout << "ref" << c_ref << "\t";
+		  for (int c_est = 0; c_est<this->confusionLoss[1].cols - 1; c_est++){
+			  if (n>0){
+				  fout << setw(10) << left << this->confusionLoss[1].at<float>(c_ref, c_est) << "\t";
+				  if (c_ref == c_est){
+					  oa.val[0] += this->confusionLoss[1].at<float>(c_ref, c_est);
+					  oa.val[1] += pow(this->confusionLoss[1].at<float>(c_ref, c_est), 2);
+				  }
+			  }
+			  else
+				  fout << setw(10) << left << 0.0 << "\t";
+		  }
+		  //fout << "( " << n << " )" << endl;
+	  }
+	  fout << " >> OA (Loss Test): " << oa.val[0] / n << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0], 2) / n) / (n - 1)) << endl;
+  
   }else{
       n = this->confusionLoss[1].at<Vec2f>(0, this->confusionLoss[1].cols-1).val[0];
       oa.val[0] = oa.val[1] = 0;
@@ -534,7 +556,7 @@ void ClassificationError::print(void){
 		  }
 		  fout << endl;
       }  
-      fout << " >> OA (Loss Test): " << oa.val[0]/this->confusionLoss[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[1].rows)/(this->confusionLoss[1].rows-1)) << endl;
+      fout << " >> BA (Loss Test): " << oa.val[0]/this->confusionLoss[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionLoss[1].rows)/(this->confusionLoss[1].rows-1)) << endl;
   }
   if (CV_MAT_CN(this->confusionAbs[1].type()) == 1){
       oa.val[0] = oa.val[1] = 0;
@@ -554,8 +576,30 @@ void ClassificationError::print(void){
 		  }
 		  fout << "( " << n << " )" << endl;
       }
-      fout << " >> OA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
-  }else{
+      fout << " >> BA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
+	
+	  oa.val[0] = oa.val[1] = 0;
+	  fout << " >> Confusion (Error):" << endl;
+	  n = 0;
+	  for (int c_ref = 0; c_ref<this->confusionAbs[1].rows; c_ref++){
+		  n += this->confusionAbs[1].at<float>(c_ref, this->confusionAbs[1].cols - 1);
+		  fout << "ref" << c_ref << "\t";
+		  for (int c_est = 0; c_est<this->confusionAbs[1].cols - 1; c_est++){
+			  if (n>0){
+				  fout << setw(10) << left << this->confusionAbs[1].at<float>(c_ref, c_est)<< "\t";
+				  if (c_ref == c_est){
+					  oa.val[0] += this->confusionAbs[1].at<float>(c_ref, c_est);
+					  oa.val[1] += pow(this->confusionAbs[1].at<float>(c_ref, c_est), 2);
+				  }
+			  }
+			  else
+				  fout << setw(10) << left << 0.0 << "\t";
+		  }
+		  //fout << "( " << n << " )" << endl;
+	  }
+	  fout << " >> OA (Error Test): " << oa.val[0] / n << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0], 2) / n) / (n - 1)) << endl;
+  }
+  else{
       n = this->confusionAbs[1].at<Vec2f>(0, this->confusionAbs[1].cols-1).val[0];
       oa.val[0] = oa.val[1] = 0;
       fout << " >> Confusion (Error) Mean:" << endl;
@@ -584,7 +628,7 @@ void ClassificationError::print(void){
 		  }
 		  fout << endl;
       }
-      fout << " >> OA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
+      fout << " >> BA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
   }
   vector<string> name;
   name.push_back("True Positives TP");
