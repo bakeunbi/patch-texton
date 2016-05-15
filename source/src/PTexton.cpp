@@ -78,7 +78,7 @@ void PTexton::initialize(string fname, int patchSize, int K, int knn){
 	this->pSize = patchSize;
 	this->half_patch = this->pSize / 2;
 	this->K = K;
-	this->RP = "yes";
+	this->RP = "no";
 
 //	this->vSize = 0;
 	ofile.open(to_string(K) + "K" + to_string(pSize) + "p" + "Experimental data.txt");
@@ -518,6 +518,8 @@ void PTexton::histMatching(Mat textonMap, vector<Mat> histDBi, int fold){
 	Mat trainData;
 	//Random Projection
 	if (this->RP == "yes"){
+		ofile << "random projection applied" << endl;
+		cout << "random projection applied" << endl;
 		Mat oneDB;
 		vconcat(histDBi, oneDB);
 
@@ -525,7 +527,8 @@ void PTexton::histMatching(Mat textonMap, vector<Mat> histDBi, int fold){
 		for (int i = 0; i < oneDB.rows; i++){
 			Mat r = oneDB.row(i);
 			transpose(r, r);
-			reduced.push_back(RandomProjection(r));
+			Mat temprp = RandomProjection(r);
+			reduced.push_back(temprp);
 		}
 		vconcat(reduced, trainData);
 	}
@@ -534,6 +537,8 @@ void PTexton::histMatching(Mat textonMap, vector<Mat> histDBi, int fold){
 	}
 	//K-nn training
 	trainData.convertTo(trainData, CV_32F);
+	cout << "traindata size" << trainData.size() << endl;
+
 	Mat trainClass(trainData.rows,1,CV_32SC1);
 
 	int n = 0;
@@ -549,7 +554,13 @@ void PTexton::histMatching(Mat textonMap, vector<Mat> histDBi, int fold){
 	int minus = 0;
 	cv::KNearest *knn = new KNearest(trainData, trainClass);
 
-	Mat histograms((textonMap.rows - minus - (pSize - 1))*(textonMap.cols - (pSize - 1)), histDBi.at(0).cols, CV_32F);
+	Mat histograms((textonMap.rows - minus - (pSize - 1))*(textonMap.cols - (pSize - 1)),trainData.cols, CV_32F);
+	cout << "hist create" << endl;
+
+	int histSize = histDBi.at(0).cols;
+	float range[] = { 0, histSize };
+	const float* histRange = { range };
+	bool uniform = true; bool accumulate = false;
 
 	//trace test map
 	n = 0; 
@@ -563,27 +574,24 @@ void PTexton::histMatching(Mat textonMap, vector<Mat> histDBi, int fold){
 			patch.convertTo(patch, CV_32F);
 
 			//calculation of histogram in each patch
-			int histSize = trainData.cols;
-			float range[] = { 0, histSize };
-			const float* histRange = { range };
-			bool uniform = true; bool accumulate = false;
 			//cout << "patch size=" << patch.size() << endl;
 			//cout << patch << endl;
 
 			Mat hist;
 			calcHist(&patch, 1, 0, Mat(), hist, 1, &histSize, &histRange, uniform, accumulate);
 			//cout << "hist size=" << hist.size() << endl;
-			//cout << hist << endl;
+//			cout << hist << endl;
 
 			if (this->RP == "yes"){
 				hist = RandomProjection(hist);
+				//hist.convertTo(hist, CV_32F);
 			}
 			else{
 				transpose(hist, hist);
 				hist.convertTo(hist, CV_32F);
 			}
 
-			//cout << h << endl;
+			//cout << hist << endl;
 			hist.copyTo(histograms.row(n));
 			//cout << cHist.row(i) << endl;
 			
@@ -968,8 +976,6 @@ void PTexton::errorAssessment(){
 			img.convertTo(img, CV_32F);img /= 255.0;
 			outputc.push_back(img);
 		}
-		Mat outclass;
-		hconcat(outputc, outclass);
 		estimate.push_back(outputc);
 	}
 	vector<vector<Mat>> reference;
@@ -1362,7 +1368,76 @@ void PTexton::clusterTextons(vector<vector<Mat>> fVectors, int fold){
 	cout << "cluster Textons success" << endl;
 
 }
+void PTexton::printTextonMap(){
+	for (int fold = 0; fold < this->nfolds; fold++){
+		vector<Mat> temp;
+		for (int trainfold = 0; trainfold < nfolds; trainfold++){
+			cout << "??" << endl;
+			if (fold != trainfold){
+				Mat textonMap = imread("testfold" + to_string(fold) + "trainfold" + to_string(trainfold) + "textonMap.png", 0);
+				temp.push_back(textonMap);
+			}
+		}
+		Mat output;
+		hconcat(temp, output);
+		imwrite("testfold" + to_string(fold) + "traintextonMap.png", output);
+		showImg(output.clone(), "testfold" + to_string(fold) + "traintextonMap_color.png", false, true);
+	}	
+}
 
+
+void PTexton::printResult(){
+	//print ref
+	Mat a = Mat::zeros(referenceData.at(0).size(),referenceData.at(0).type());
+	for (int i = 0; i < 5; i++){
+		Mat ref = referenceData.at(i);
+		normalize(ref, ref, 0, i + 1, NORM_MINMAX);
+		a += ref;
+	}
+	a.convertTo(a, CV_8U);
+	normalize(a, a, 0, 255, CV_MINMAX);
+	imwrite("referenceClasses.png", a);
+
+	//print each class
+	vector<Mat> outputc[5];
+	vector<Mat> outputc2[5];
+	for (int fold = 0; fold < nfolds; fold++){
+		for (int c = 0; c < nclass; c++){
+			Mat img = imread("test" + to_string(fold) + "fold_class" + to_string(c) + "output.png", 0);
+
+			//img.convertTo(img, CV_32F);// img /= 255.0;
+			outputc[c].push_back(img);
+
+			Mat rimg = referenceData.at(c)(Rect(foldRect.at(fold).x + half_patch, foldRect.at(fold).y + half_patch, foldRect.at(fold).width - (pSize - 1), foldRect.at(fold).height - (pSize - 1)));
+			cout << img.size() << endl;
+			cout << rimg.size() << endl;
+			Mat andMat;
+			bitwise_and(rimg,img,andMat);
+			normalize(andMat, andMat, 0, c + 1, NORM_MINMAX);
+			outputc2[c].push_back(andMat);
+		}
+	}
+	for (int c = 0; c < nclass; c++){
+		Mat outclass;
+		hconcat(outputc[c], outclass);
+		imwrite(to_string(c) + "output.png", outclass);
+	}
+
+	//print one output
+	Mat outclass0;
+	hconcat(outputc2[0], outclass0);
+	Mat ref = Mat::zeros(outclass0.size(),outclass0.type());
+	ref += outclass0;
+	for (int c = 1; c < nclass; c++){
+		Mat outclass;
+		hconcat(outputc2[c], outclass);
+		ref += outclass;
+	}
+	ref.convertTo(ref, CV_8U);
+	normalize(ref, ref, 0, 255, CV_MINMAX);
+	imwrite("alloutput.png", ref);
+
+}
 float PTexton::wishartDistance(float firstTerm, Mat invCenter, Mat comp){	//input ::region for training and testing
 
 	//std::cout << "--wishart distance measure start--" << endl;
@@ -1430,7 +1505,7 @@ void PTexton::showImg(Mat img, string win, bool show, bool save){
 	// scale and convert
 	if (img.channels() == 1){
 		img.convertTo(aux, CV_8U);
-		normalize(aux, aux, 0, 255, CV_MINMAX);
+		//normalize(aux, aux, 0, 255, CV_MINMAX);
 		applyColorMap(aux, aux, COLORMAP_HSV);		
 	}
 

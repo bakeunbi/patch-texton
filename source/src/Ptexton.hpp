@@ -72,6 +72,9 @@ public:
 	//! visualize center matrix
 	void printCenter(Mat& input);
 
+	void printTextonMap();
+	void printResult();
+
 	//! show and write outputImage and apply colormap
 	void showImg(Mat img, string win, bool show, bool save);
 
@@ -103,7 +106,6 @@ public:
 private:
 	//! clustering textons using train image
 	void clusterTextons(vector<vector<Mat>> fVectors, int fold);
-
 
 	//! extract feature vectors
 	vector<vector<Mat>> generateFVectors(cv::Rect region);
