@@ -1396,6 +1396,7 @@ void PTexton::printResult(){
 	}
 	a.convertTo(a, CV_8U);
 	normalize(a, a, 0, 255, CV_MINMAX);
+	applyColorMap(a, a, COLORMAP_RAINBOW);
 	imwrite("referenceClasses.png", a);
 
 	//print each class
@@ -1435,6 +1436,7 @@ void PTexton::printResult(){
 	}
 	ref.convertTo(ref, CV_8U);
 	normalize(ref, ref, 0, 255, CV_MINMAX);
+	applyColorMap(ref, ref, COLORMAP_RAINBOW);
 	imwrite("alloutput.png", ref);
 
 }
