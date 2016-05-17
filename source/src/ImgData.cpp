@@ -40,6 +40,11 @@ void ImgData::load(string path, int level){
 
 }
 
+void ImgData::load(vector<Mat> polsar){
+	this->polSAR.push_back(polsar);
+	this->size = this->polSAR.at(0).at(0).size();
+	
+}
 // load data from disk
 void ImgData::load(void){
   
@@ -97,85 +102,90 @@ void ImgData::polSARProjection(void){
     
     // to color: use channels from speckle reduced image
     // load speckle-reduced image; produced with RAT until speckle-reduction C/C++-Code is available
-	vector< Mat > cov = polSAR.at(0);
-    //loadRAT(this->path.substr(0,this->path.rfind('_')) + "_cov_reflee.rat", cov);
-	//loadRAT(this->path, cov);
+	for (int i = 0; i < polSAR.size(); i++){
+		vector< Mat > cov = polSAR.at(i);
+		//loadRAT(this->path.substr(0,this->path.rfind('_')) + "_cov_reflee.rat", cov);
+		//loadRAT(this->path, cov);
 
-	// check if dual-pol or full-pol
-    if (cov.size() == 9)
-		dual = false;
-    else
-		dual = true;
+		// check if dual-pol or full-pol
+		if (cov.size() == 9)
+			dual = false;
+		else
+			dual = true;
 
-    Mat blue, red, green, span, colImg_small, colImg;
-    vector<Mat> channels;
+		Mat blue, red, green, span, colImg_small, colImg;
+		vector<Mat> channels;
 
-    // get channel info
-    if (!dual){
-	  split(cov.at(0), channels);
-	  red = channels.at(0).clone();
-	  split(cov.at(4), channels);
-	  green = channels.at(0).clone();
-	  split(cov.at(8), channels);
-	  blue = channels.at(0).clone();
-	  //cout << "the data isn't dual pol" << endl;
-    }else{
-      // in the case of dual pol, use average of the first two channels as the third channel
-      split(cov.at(0), channels);
-	  red = channels.at(0).clone();
-	  split(cov.at(3), channels);
-	  green = channels.at(0).clone();
-	  blue = (red + green) * 0.5;
-    }
+		// get channel info
+		if (!dual){
+			split(cov.at(0), channels);
+			red = channels.at(0).clone();
+			split(cov.at(4), channels);
+			green = channels.at(0).clone();
+			split(cov.at(8), channels);
+			blue = channels.at(0).clone();
+			cout << "the data isn't dual pol" << endl;
+		}
+		else{
+			// in the case of dual pol, use average of the first two channels as the third channel
+			split(cov.at(0), channels);
+			red = channels.at(0).clone();
+			split(cov.at(3), channels);
+			green = channels.at(0).clone();
+			blue = (red + green) * 0.5;
+		}
 
-    // perform log-transform
-	cout << this->path << endl;
-	if (this->path.find("oph") != string::npos){
-		//cout << "use log" << endl;
-		red = red + 1;
-		green = green + 1;
-		blue = blue + 1;
-		log(red, red);
-		log(green, green);
-		log(blue, blue);
-	}else{
-		cout << "use pow" << endl;
-		(red, 0.5, red);
-		pow(green, 0.5, green);
-		pow(blue, 0.5, blue);
+		// perform log-transform
+		cout << this->path << endl;
+		//if (this->path.find("oph") != string::npos){
+			//cout << "use log" << endl;
+			red = red + 1;
+			green = green + 1;
+			blue = blue + 1;
+			log(red, red);
+			log(green, green);
+			log(blue, blue);/*
+		}
+		else{
+			cout << "use pow" << endl;
+			(red, 0.5, red);
+			pow(green, 0.5, green);
+			pow(blue, 0.5, blue);
+		}*/
+		//cin.get();
+		// thats new and wasnt used before!!
+		// START
+		threshold(red, red, 2.5*mean(red).val[0], 0, THRESH_TRUNC);
+		threshold(green, green, 2.5*mean(green).val[0], 0, THRESH_TRUNC);
+		threshold(blue, blue, 2.5*mean(blue).val[0], 0, THRESH_TRUNC);
+		// END
+		// get max to scale to [min,255]
+		max(red, green, tmp);
+		max(blue, tmp, tmp);
+		//minMaxLoc(tmp, &minVal, &maxVal);
+		minMaxLoc(red, &minVal, &maxVal);
+		red = red * 255. / maxVal;
+		minMaxLoc(green, &minVal, &maxVal);
+		green = green * 255. / maxVal;
+		minMaxLoc(blue, &minVal, &maxVal);
+		blue = blue * 255. / maxVal;
+		channels.clear();
+		channels.push_back(blue);
+		channels.push_back(green);
+		channels.push_back(red);
+		// merge color planes to image
+		merge(channels, colImg_small);
+		// NOTE: SPECKLE-REDUCED IMAGE MIGHT BE SMALLER THAN ORIGINAL IMAGE ==> re-size!!
+		resize(colImg_small, colImg, Size(this->polSAR.at(0).front().cols, this->polSAR.at(0).front().rows));
+
+		// add
+		this->color.push_back(colImg.clone());
+
+
+		Mat gray_image;
+		cvtColor(colImg, gray_image, CV_BGR2GRAY);
+		this->grayscale.push_back(gray_image.clone());
 	}
-	//cin.get();
-    // thats new and wasnt used before!!
-    // START
-    threshold(red, red, 2.5*mean(red).val[0], 0, THRESH_TRUNC);
-    threshold(green, green, 2.5*mean(green).val[0], 0, THRESH_TRUNC);
-    threshold(blue, blue, 2.5*mean(blue).val[0], 0, THRESH_TRUNC);
-    // END
-    // get max to scale to [min,255]
-    max(red, green, tmp);
-    max(blue, tmp, tmp);
-    //minMaxLoc(tmp, &minVal, &maxVal);
-	minMaxLoc(red, &minVal, &maxVal);
-    red = red * 255./maxVal;
-	minMaxLoc(green, &minVal, &maxVal);
-    green = green * 255./maxVal;
-	minMaxLoc(blue, &minVal, &maxVal);
-    blue = blue * 255./maxVal;
-	channels.clear();
-	channels.push_back(blue);
-	channels.push_back(green);
-	channels.push_back(red);
-    // merge color planes to image
-    merge(channels, colImg_small);
-    // NOTE: SPECKLE-REDUCED IMAGE MIGHT BE SMALLER THAN ORIGINAL IMAGE ==> re-size!!
-    resize(colImg_small, colImg, Size(this->polSAR.at(0).front().cols, this->polSAR.at(0).front().rows));
-    
-    // add
-    this->color.push_back(colImg.clone());
-	
-	Mat gray_image;
-	cvtColor(colImg, gray_image, CV_BGR2GRAY);
-	this->grayscale.push_back(gray_image.clone());
 
 }
 

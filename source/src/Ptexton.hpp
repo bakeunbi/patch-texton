@@ -70,7 +70,7 @@ public:
 	void errorAssessment();
 	
 	//! visualize center matrix
-	void printCenter(Mat& input);
+	void printCenter(vector<vector<Mat>> centers, int fold,int c);
 
 	//! show and write outputImage and apply colormap
 	void showImg(Mat img, string win, bool show, bool save);

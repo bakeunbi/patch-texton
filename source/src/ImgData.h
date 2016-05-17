@@ -42,6 +42,7 @@ class ImgData{
     /*!
       sets data path and data level, then calls @sa load(void)
     */
+	void load(vector<Mat> polsar);
     void load(string, int);
     //! projection of data down to other data levels
     /*!

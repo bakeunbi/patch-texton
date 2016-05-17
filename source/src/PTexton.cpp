@@ -78,7 +78,7 @@ void PTexton::initialize(string fname, int patchSize, int K, int knn){
 	this->pSize = patchSize;
 	this->half_patch = this->pSize / 2;
 	this->K = K;
-	this->RP = "yes";
+	this->RP = "no";
 
 //	this->vSize = 0;
 	ofile.open(to_string(K) + "K" + to_string(pSize) + "p" + "Experimental data.txt");
@@ -1066,43 +1066,74 @@ bool PTexton::loadImageData(void){
 }
 
 //! visualize center matrix	(visualize K textons)
-void PTexton::printCenter(Mat& centers){
+void PTexton::printCenter(vector<vector<Mat>> centers, int fold,int c){
+	ImgData cPolSAR = ImgData("centers",POLSAR);
 
-	if (this->K != centers.rows){
-		cerr << "centers' row is not equal to K" << endl;
-		return;
-	}
-	int nChannel = 0;
-	int type = CV_16U;
-
-	switch (this->imgType){
-	case GRAY: break;
-	case COLOR:	type = CV_64FC3; break;
-	case POLSAR: break;	//tranform PolSAR to color image
-	}
-
-	float* p;
-	for (int i = 0; i < this->K; i++){
-		p = centers.ptr<float>(i);
-
-		Mat visTexton(this->pSize, this->pSize, type);
-
-		for (int k = 0, n2 = 0; k < this->pSize; k++){
-			for (int l = 0; l < this->pSize; l++,n2++){
-				switch (this->imgType){
-				case GRAY:
-					visTexton.at<float>(k, l) = p[n2]; break;
-				case COLOR:
-					visTexton.at<Vec3f>(k, l)[0] = p[n2]; n2++;
-					visTexton.at<Vec3f>(k, l)[1] = p[n2]; n2++;
-					visTexton.at<Vec3f>(k, l)[2] = p[n2]; break;
+	for (int i = 0; i < centers.size(); i++){
+		vector<Mat> fVec = centers.at(i);
+		vector<Mat> centerPol;
+		for (int k = 0; k < 3; k++){
+			for (int l = 0; l < 3; l++){
+				//cout << fVec.size() << endl;
+				//cout << pSize << endl;
+				Mat element(pSize, pSize, CV_32FC2);	//two channel for complex value of PolSAR data (real, imaginary)
+				int n = 0;
+				for (int x = 0; x < pSize; x++){
+					for (int y = 0; y < pSize; y++, n++){
+						element.at<Vec2f>(y, x)[0] = fVec.at(n).at<Vec2f>(k, l)[0];
+						element.at<Vec2f>(y, x)[1] = fVec.at(n).at<Vec2f>(k, l)[1];
+						//cout << n << endl;
+					}
 				}
+				centerPol.push_back(element);
 			}
 		}
-		imshow("texton" + to_string(i), visTexton);
-		waitKey(0);
+		cPolSAR.load(centerPol);
 	}
-	cout << endl;
+	cout << "transform done" << endl;
+	cPolSAR.project();
+
+	for (int i = 0; i < centers.size(); i++){
+		Mat img = cPolSAR.getData(COLOR, i);
+		resize(img, img, Size(pSize * 10, pSize * 10));
+		imwrite(to_string(fold)+"fold_"+to_string(c)+"c_"+to_string(i) + "th center.png", img);
+	}
+	
+	//if (this->K != centers.rows){
+	//	cerr << "centers' row is not equal to K" << endl;
+	//	return;
+	//}
+	//int nChannel = 0;
+	//int type = CV_16U;
+
+	//switch (this->imgType){
+	//case GRAY: break;
+	//case COLOR:	type = CV_64FC3; break;
+	//case POLSAR: break;	//tranform PolSAR to color image
+	//}
+
+	//float* p;
+	//for (int i = 0; i < this->K; i++){
+	//	p = centers.ptr<float>(i);
+
+	//	Mat visTexton(this->pSize, this->pSize, type);
+
+	//	for (int k = 0, n2 = 0; k < this->pSize; k++){
+	//		for (int l = 0; l < this->pSize; l++,n2++){
+	//			switch (this->imgType){
+	//			case GRAY:
+	//				visTexton.at<float>(k, l) = p[n2]; break;
+	//			case COLOR:
+	//				visTexton.at<Vec3f>(k, l)[0] = p[n2]; n2++;
+	//				visTexton.at<Vec3f>(k, l)[1] = p[n2]; n2++;
+	//				visTexton.at<Vec3f>(k, l)[2] = p[n2]; break;
+	//			}
+	//		}
+	//	}
+	//	imshow("texton" + to_string(i), visTexton);
+	//	waitKey(0);
+	//}
+	//cout << endl;
 
 
 }
@@ -1230,7 +1261,7 @@ void PTexton::clusterTextons(vector<vector<Mat>> fVectors, int fold){
 		centers.push_back(samples.at(random));
 	}
 
-	const int maxIter = 20;
+	const int maxIter = 10;
 	int iter = 0;
 	// loop if stop criteria isn't satisfied
 	while (iter < maxIter){
@@ -1513,6 +1544,9 @@ void PTexton::learningTexton(void){
 		}
 		for (int c = 0; c < nclass; c++){
 			textonT[c].join();
+		}
+		for (int c = 0; c < nclass; c++){
+			printCenter(this->textons[fold], fold, c);
 		}
 	}
 
