@@ -509,8 +509,10 @@ void ClassificationError::print(void){
 	  oa.val[0] = oa.val[1] = 0;
 	  fout << " >> Confusion (Loss):" << endl;
 	  n = 0;
+	  int all = 0;
 	  for (int c_ref = 0; c_ref<this->confusionLoss[1].rows; c_ref++){
-		  n += this->confusionLoss[1].at<float>(c_ref, this->confusionLoss[1].cols - 1);
+		  n = this->confusionLoss[1].at<float>(c_ref, this->confusionLoss[1].cols - 1);
+		  all += n;
 		  fout << "ref" << c_ref << "\t";
 		  for (int c_est = 0; c_est<this->confusionLoss[1].cols - 1; c_est++){
 			  if (n>0){
@@ -523,9 +525,9 @@ void ClassificationError::print(void){
 			  else
 				  fout << setw(10) << left << 0.0 << "\t";
 		  }
-		  //fout << "( " << n << " )" << endl;
+		  fout << "( " << n << " )" << endl;
 	  }
-	  fout << " >> OA (Loss Test): " << oa.val[0] / n << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0], 2) / n) / (n - 1)) << endl;
+	  fout << " >> OA (Loss Test): " << oa.val[0] / all << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0], 2) / all) / (all - 1)) << endl;
   
   }else{
       n = this->confusionLoss[1].at<Vec2f>(0, this->confusionLoss[1].cols-1).val[0];
@@ -578,26 +580,27 @@ void ClassificationError::print(void){
       }
       fout << " >> BA (Error Test): " << oa.val[0]/this->confusionAbs[1].rows << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0],2)/this->confusionAbs[1].rows)/(this->confusionAbs[1].rows-1)) << endl;
 	
-	  oa.val[0] = oa.val[1] = 0;
-	  fout << " >> Confusion (Error):" << endl;
-	  n = 0;
-	  for (int c_ref = 0; c_ref<this->confusionAbs[1].rows; c_ref++){
-		  n += this->confusionAbs[1].at<float>(c_ref, this->confusionAbs[1].cols - 1);
-		  fout << "ref" << c_ref << "\t";
-		  for (int c_est = 0; c_est<this->confusionAbs[1].cols - 1; c_est++){
-			  if (n>0){
-				  fout << setw(10) << left << this->confusionAbs[1].at<float>(c_ref, c_est)<< "\t";
-				  if (c_ref == c_est){
-					  oa.val[0] += this->confusionAbs[1].at<float>(c_ref, c_est);
-					  oa.val[1] += pow(this->confusionAbs[1].at<float>(c_ref, c_est), 2);
-				  }
-			  }
-			  else
-				  fout << setw(10) << left << 0.0 << "\t";
-		  }
-		  //fout << "( " << n << " )" << endl;
-	  }
-	  fout << " >> OA (Error Test): " << oa.val[0] / n << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0], 2) / n) / (n - 1)) << endl;
+	  //oa.val[0] = oa.val[1] = 0;
+	  //fout << " >> Confusion (Error):" << endl;
+	  //n = 0;
+	  //for (int c_ref = 0; c_ref<this->confusionAbs[1].rows; c_ref++){
+		 // n += this->confusionAbs[1].at<float>(c_ref, this->confusionAbs[1].cols - 1);
+		 // fout << "ref" << c_ref << "\t";
+		 // for (int c_est = 0; c_est<this->confusionAbs[1].cols - 1; c_est++){
+			//  if (n>0){
+			//	  fout << setw(10) << left << this->confusionAbs[1].at<float>(c_ref, c_est)<< "\t";
+			//	  if (c_ref == c_est){
+			//		  oa.val[0] += this->confusionAbs[1].at<float>(c_ref, c_est);
+			//		  oa.val[1] += pow(this->confusionAbs[1].at<float>(c_ref, c_est), 2);
+			//	  }
+			//  }
+			//  else
+			//	  fout << setw(10) << left << 0.0 << "\t";
+		 // }
+		 // fout << endl;
+		 // //fout << "( " << n << " )" << endl;
+	  //}
+	  //fout << " >> OA (Error Test): " << oa.val[0] / n << "\t+-\t" << sqrt((oa.val[1] - pow(oa.val[0], 2) / n) / (n - 1)) << endl;
   }
   else{
       n = this->confusionAbs[1].at<Vec2f>(0, this->confusionAbs[1].cols-1).val[0];
@@ -747,8 +750,7 @@ void ClassificationError::print(void){
 		  AUC += TPR*0.1;
 	  }
 	  for (int i = 0; i < 31; i++){
-		  fout << name.at(i)<<"\t";
-		  fout << statistics.row(i) << endl;
+		  fout << statistics.row(i) <<"\t"<< name.at(i) << "\n";		  
 	  }
 	  fout << "Area Under the Curve AUC:\t" << AUC << endl;
 	  fout << "Discrimination D:\t" << (AUC-0.5) << endl;

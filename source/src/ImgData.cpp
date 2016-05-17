@@ -187,6 +187,9 @@ void ImgData::polSARProjection(void){
 		this->grayscale.push_back(gray_image.clone());
 	}
 
+	//imwrite("color.png", colImg);
+	//imwrite("gray.png", gray_image);
+	//waitKey(0);
 }
 
 // return image size

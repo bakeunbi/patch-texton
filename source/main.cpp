@@ -12,7 +12,6 @@
 using namespace std;
 
 int main(int argc, char** argv){
-   
 	int pSize=3, K=3, knn=1;
 	//string RP = "yes";
 	string run = "eval";
@@ -21,8 +20,6 @@ int main(int argc, char** argv){
 	if (argc < 2){
 		cout << "Usage Error: Select image!" << endl;
 		return 1;
-	}
-	else if (argc < 3){
 	}
 	else if (argc < 4){
 		K = atoi(argv[2]);
@@ -40,7 +37,7 @@ int main(int argc, char** argv){
 	string fname = argv[1];
 	PTexton pTexton = PTexton();
 	pTexton.initialize(fname, pSize, K, knn);	//file name, patch size, K,RP
-	
+		
 	if (run == "eval"){
 		pTexton.evaluate();
 	}
@@ -54,6 +51,13 @@ int main(int argc, char** argv){
 	}
 	else if (run == "assess"){
 		pTexton.errorAssessment();
+	}
+	//else if (run == "print"){
+	//	//pTexton.printTextonMap();
+	//	pTexton.printResult();
+	//}
+	else if (run == "gray"){
+		pTexton.grayscaleTexton();
 	}
 	return 0;
 }

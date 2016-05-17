@@ -69,8 +69,12 @@ public:
 	//! read image and compute classification errors
 	void errorAssessment();
 	
+	void grayscaleTexton();
 	//! visualize center matrix
 	void printCenter(vector<vector<Mat>> centers, int fold,int c);
+
+	void printTextonMap();
+	void printResult();
 
 	//! show and write outputImage and apply colormap
 	void showImg(Mat img, string win, bool show, bool save);
@@ -104,7 +108,6 @@ private:
 	//! clustering textons using train image
 	void clusterTextons(vector<vector<Mat>> fVectors, int fold);
 
-
 	//! extract feature vectors
 	vector<vector<Mat>> generateFVectors(cv::Rect region);
 	vector<vector<Mat>> generateFVectors(cv::Rect region,int c);
@@ -129,6 +132,8 @@ private:
 
 	//! map textons to each pixel for thread
 	void textonMappingT(vector<vector<Mat>> testonDic, int fold, int trainfold);
+	//! map textons to each pixel for thread
+	void textonMappingG(vector<Mat> testonDic, int fold, int trainfold);
 
 	//! generate random matrix for random projection
 	void generateRandomMat(Mat& randomMat, int highD, int lowD, string rMode);
@@ -166,7 +171,7 @@ private:
 	vector<vector<Mat>> textons[5];
 
 	//! current used image
-	Mat currentImg;
+	//Mat currentImg;
 
 	//! file outstream
 	ofstream ofile;
