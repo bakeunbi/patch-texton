@@ -52,9 +52,12 @@ int main(int argc, char** argv){
 	else if (run == "assess"){
 		pTexton.errorAssessment();
 	}
-	else if (run == "print"){
-		//pTexton.printTextonMap();
-		pTexton.printResult();
+	//else if (run == "print"){
+	//	//pTexton.printTextonMap();
+	//	pTexton.printResult();
+	//}
+	else if (run == "gray"){
+		pTexton.grayscaleTexton();
 	}
 	return 0;
 }

@@ -169,7 +169,7 @@ void ImgData::polSARProjection(void){
     merge(channels, colImg_small);
     // NOTE: SPECKLE-REDUCED IMAGE MIGHT BE SMALLER THAN ORIGINAL IMAGE ==> re-size!!
     resize(colImg_small, colImg, Size(this->polSAR.at(0).front().cols, this->polSAR.at(0).front().rows));
-    
+	
     // add
     this->color.push_back(colImg.clone());
 	
@@ -177,6 +177,9 @@ void ImgData::polSARProjection(void){
 	cvtColor(colImg, gray_image, CV_BGR2GRAY);
 	this->grayscale.push_back(gray_image.clone());
 
+	//imwrite("color.png", colImg);
+	//imwrite("gray.png", gray_image);
+	//waitKey(0);
 }
 
 // return image size
