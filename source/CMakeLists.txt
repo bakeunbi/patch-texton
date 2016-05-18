@@ -8,11 +8,11 @@ include_directories("${PROJECT_SOURCE_DIR}/eval")
 include_directories("/opencv/build/include/opencv")
 include_directories("/opencv/build/include/opencv2")
 include_directories("/opencv/build/include")
-# include_directories("${PROJECT_BINARY_DIR}/src/lib/")
+#include_directories("${PROJECT_BINARY_DIR}/dlls/")
 include_directories("/boost_1_58_0/")
 link_directories("/boost_1_58_0/lib/")
 link_directories("/opencv/build/x64/vc12/lib")
-# link_directories("/opencv/build/x64/vc12/bin")
+#link_directories("/opencv/build/x64/vc12/bin")
 
 # set (CMAKE_CXX_FLAGS "-g")
 
@@ -21,7 +21,7 @@ add_executable(patchTextons
 main.cpp
 src/ImgData.cpp
 src/PTexton.cpp
-src/patchVector.cpp
+#src/patchVector.cpp
 eval/ClassificationError.cpp
 #eval/Evaluation.cpp
 )
